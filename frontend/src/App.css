@@ -1,0 +1,52 @@
+:root {
+  --columbia-blue: #cfe8efff;
+  --columbia-blue-2: #c6dbf0ff;
+  --columbia-blue-3: #aed1e6ff;
+  --powder-blue: #a0c4e2ff;
+  --sky-blue: #85c7deff;
+  --dark-blue: #2c3e50;
+  --accent-color: #3498db;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: var(--columbia-blue);
+  color: var(--dark-blue);
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--columbia-blue);
+}
+
+.main-content {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--columbia-blue-2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--powder-blue);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sky-blue);
+}
