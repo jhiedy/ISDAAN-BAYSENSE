@@ -149,7 +149,7 @@ function MapOverlayDatePicker({
   return (
     <Paper p="md" radius="md" withBorder>
       <Flex justify="space-between" align="center" mb="xs">
-        <Badge>Map Overlay Date</Badge>
+        <Badge>Map Overlay Date Picker</Badge>
         <Group gap="xs">
           <Tooltip label="Select from a list of dates with available images to show on the map." withArrow>
             <ActionIcon variant="transparent">

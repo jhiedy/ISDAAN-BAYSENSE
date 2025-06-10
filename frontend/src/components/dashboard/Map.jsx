@@ -113,7 +113,7 @@ function MapComponent({
       {isLegendVisible && (
         <div className="map-legend">
           <div className="legend-header">
-            <p className="legend-title">Visualization Layer</p>
+            <p className="legend-title">Visualization Legend</p>
             <p style={{ fontSize: "12px", textAlign: "center", margin: "2px 0" }}>
                 Dates placeholder
             </p>
@@ -161,20 +161,13 @@ function MapComponent({
           </div>
         </div>
       )}
-      <div>
+      <div className="legend-toggle-button">
         <Tooltip label={isLegendVisible ? "Hide Legend" : "Show Legend"} position="left" withArrow>
             <ActionIcon
               variant="filled"
               color="blue"
               size="lg"
               onClick={toggleLegendVisibility}
-              style={{
-                position: 'fixed',
-                left: '23%',
-                top: '77%',
-                zIndex: 100,
-                boxShadow: '0 0 10px rgba(0,0,0,0.2)',
-              }}
             >
               {isLegendVisible ? <EyeOff size={18} /> : <Eye size={18} />}
             </ActionIcon>

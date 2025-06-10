@@ -64,6 +64,7 @@
   color: #2980b9;
 }
 
+/* Smaller screens (default) */
 .map-legend {
   position: absolute;
   bottom: 20px;
@@ -73,10 +74,28 @@
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   border: 1px solid rgba(0,0,0,0.1);
-  width: 90%; 
+  width: 90%;
   max-width: 300px;
   text-align: left;
   z-index: 100;
+}
+
+/* Full screen width (larger screens) */
+@media (min-width: 1024px) { /* Adjust breakpoint as needed for "full screen" */
+  .map-legend {
+    position: absolute;
+    bottom: 50px;
+    left: -390px; /* This negative left value will likely cause it to be off-screen unless intended to be pulled in by a parent */
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    border: 1px solid rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 350px;
+    text-align: left;
+    z-index: 1000;
+  }
 }
 
 .legend-header {
@@ -199,7 +218,7 @@
   border: 1px solid rgba(0,0,0,0.1);
 }
 
-.ol-zoom-in, 
+.ol-zoom-in,
 .ol-zoom-out {
   display: block;
   margin: 5px;
@@ -217,14 +236,14 @@
   transition: all 0.2s ease;
 }
 
-.ol-zoom-in:hover, 
+.ol-zoom-in:hover,
 .ol-zoom-out:hover {
   background-color: #f0f0f0;
   color: #000;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.ol-zoom-in:active, 
+.ol-zoom-in:active,
 .ol-zoom-out:active {
   background-color: #e0e0e0;
   transform: scale(0.95);
@@ -354,4 +373,30 @@
   border-width: 5px;
   border-style: solid;
   border-color: white transparent transparent transparent;
+}
+
+.legend-toggle-button {
+  display: none; /* Hidden by default for larger screens */
+}
+
+@media (max-width: 1023px) { /* Visible only on smaller screens */
+  .legend-toggle-button {
+    display: block; 
+    position: fixed;
+    top: 65%; 
+    left: 35%;
+    transform: translateY(-50%);
+    z-index: 1001;
+  }
+}
+
+@media (max-width: 780px) { /* Visible only on smaller screens */
+  .legend-toggle-button {
+    display: block; 
+    position: fixed;
+    top: 65%; 
+    left: 10%;
+    transform: translateY(-50%);
+    z-index: 1001;
+  }
 }

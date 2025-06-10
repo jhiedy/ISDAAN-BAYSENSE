@@ -3,7 +3,7 @@ from flask_bcrypt import Bcrypt
 import jwt 
 import datetime
 from app import db
-from app.models import User, FishFarm, Admin
+from app.models import User, Admin
 from functools import wraps
 
 print(jwt.__file__)
@@ -75,21 +75,10 @@ def token_required(f):
 @auth_routes.route('/api/me', methods=['GET'])
 @token_required
 def get_current_user(user):
-    # Fetch farm details if user has an affiliation
-    farm_data = None
-    if user.farm_affiliation:
-        farm = FishFarm.query.get(user.farm_affiliation)
-        if farm:
-            farm_data = {
-                "farm_id": farm.farm_id,
-                "farm_name": farm.farm_name
-            }
-
     return jsonify({
         "name": user.name,
         "email": user.email,
         "contact_no": user.contact_no,
-        "farm_affiliation": farm_data
     })
     
 @auth_routes.route('/api/admin/me', methods=['GET'])
