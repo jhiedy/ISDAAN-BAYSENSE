@@ -3,10 +3,11 @@ import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { useState, useEffect } from 'react';
 
-function MapOverlayDatePicker({ 
-  selectedOverlayDate, 
-  setSelectedOverlayDate, 
-  availableDates, 
+function MapOverlayDatePicker({
+  selectedOverlayDate,
+  setSelectedOverlayDate,
+  availableDates,
+  disabled
 }) {
   const [years, setYears] = useState([]);
   const [months, setMonths] = useState([]);
@@ -14,68 +15,103 @@ function MapOverlayDatePicker({
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
-  const [tempSelectedOverlayDate, setTempSelectedOverlayDate] = useState(selectedOverlayDate);
 
+  // Sync internal state with prop
   useEffect(() => {
     if (selectedOverlayDate && isValid(selectedOverlayDate)) {
       setSelectedYear(format(selectedOverlayDate, 'yyyy'));
       setSelectedMonth(format(selectedOverlayDate, 'MM'));
       setSelectedDay(format(selectedOverlayDate, 'dd'));
-      setTempSelectedOverlayDate(selectedOverlayDate);
+    } else {
+        // Clear internal selections if prop is null/invalid
+        setSelectedYear(null);
+        setSelectedMonth(null);
+        setSelectedDay(null);
     }
   }, [selectedOverlayDate]);
 
   // Extract unique years from available dates
   useEffect(() => {
-    if (!availableDates || availableDates.length === 0) return;
-    
+    if (!availableDates || availableDates.length === 0) {
+      setYears([]);
+      setMonths([]);
+      setDays([]);
+      setSelectedYear(null);
+      setSelectedMonth(null);
+      setSelectedDay(null);
+      return;
+    }
+
     const uniqueYears = [...new Set(availableDates.map(date => {
-      const dateObj = new Date(date);
+      const dateObj = parseISO(date); // Use parseISO for string dates
       return isValid(dateObj) ? format(dateObj, 'yyyy') : null;
     }).filter(Boolean))].sort();
-    
+
     setYears(uniqueYears);
-  }, [availableDates]);
+
+    // If a year is selected but no longer available, reset it
+    if (selectedYear && !uniqueYears.includes(selectedYear)) {
+        setSelectedYear(uniqueYears[0] || null); // Default to first available if exists
+    } else if (!selectedYear && uniqueYears.length > 0) {
+        setSelectedYear(format(selectedOverlayDate || parseISO(availableDates[availableDates.length - 1]), 'yyyy')); // Set to the year of selectedOverlayDate or latest
+    }
+
+  }, [availableDates, selectedYear, selectedOverlayDate]);
+
 
   // Update months when year changes
   useEffect(() => {
-    if (!availableDates || availableDates.length === 0 || !selectedYear) return;
-    
+    if (!availableDates || availableDates.length === 0 || !selectedYear) {
+      setMonths([]);
+      setSelectedMonth(null);
+      return;
+    }
+
     const filteredMonths = [...new Set(availableDates
       .filter(date => {
-        const dateObj = new Date(date);
+        const dateObj = parseISO(date);
         return isValid(dateObj) && format(dateObj, 'yyyy') === selectedYear;
       })
-      .map(date => format(new Date(date), 'MM')))].sort();
-    
+      .map(date => format(parseISO(date), 'MM')))].sort();
+
     setMonths(filteredMonths);
-    
+
     // If current month isn't in the filtered list, select the first available
-    if (filteredMonths.length > 0 && (!selectedMonth || !filteredMonths.includes(selectedMonth))) {
-      setSelectedMonth(filteredMonths[0]);
+    if (selectedMonth && !filteredMonths.includes(selectedMonth)) {
+      setSelectedMonth(filteredMonths[0] || null);
+    } else if (!selectedMonth && filteredMonths.length > 0) {
+        setSelectedMonth(format(selectedOverlayDate || parseISO(availableDates[availableDates.length - 1]), 'MM')); // Set to month of selectedOverlayDate or latest
     }
-  }, [availableDates, selectedYear, selectedMonth]);
+  }, [availableDates, selectedYear, selectedMonth, selectedOverlayDate]);
+
 
   // Update days when year or month changes
   useEffect(() => {
-    if (!availableDates || availableDates.length === 0 || !selectedYear || !selectedMonth) return;
-    
+    if (!availableDates || availableDates.length === 0 || !selectedYear || !selectedMonth) {
+      setDays([]);
+      setSelectedDay(null);
+      return;
+    }
+
     const filteredDays = [...new Set(availableDates
       .filter(date => {
-        const dateObj = new Date(date);
-        return isValid(dateObj) && 
-               format(dateObj, 'yyyy') === selectedYear && 
+        const dateObj = parseISO(date);
+        return isValid(dateObj) &&
+               format(dateObj, 'yyyy') === selectedYear &&
                format(dateObj, 'MM') === selectedMonth;
       })
-      .map(date => format(new Date(date), 'dd')))].sort((a, b) => parseInt(a) - parseInt(b));
-    
+      .map(date => format(parseISO(date), 'dd')))].sort((a, b) => parseInt(a) - parseInt(b));
+
     setDays(filteredDays);
-    
+
     // If current day isn't in the filtered list, select the first available
-    if (filteredDays.length > 0 && (!selectedDay || !filteredDays.includes(selectedDay))) {
-      setSelectedDay(filteredDays[0]);
+    if (selectedDay && !filteredDays.includes(selectedDay)) {
+      setSelectedDay(filteredDays[0] || null);
+    } else if (!selectedDay && filteredDays.length > 0) {
+        setSelectedDay(format(selectedOverlayDate || parseISO(availableDates[availableDates.length - 1]), 'dd')); // Set to day of selectedOverlayDate or latest
     }
-  }, [availableDates, selectedYear, selectedMonth, selectedDay]);
+  }, [availableDates, selectedYear, selectedMonth, selectedDay, selectedOverlayDate]);
+
 
   // Handle year change
   const handleYearChange = (year) => {
@@ -94,48 +130,42 @@ function MapOverlayDatePicker({
 
   // Navigate to next available date
   const navigateToNextDate = () => {
-    if (!tempSelectedOverlayDate || availableDates.length === 0) return;
-    
-    const currentDateStr = format(tempSelectedOverlayDate, 'yyyy-MM-dd');
+    if (!selectedOverlayDate || availableDates.length === 0) return;
+
+    const currentDateStr = format(selectedOverlayDate, 'yyyy-MM-dd');
     const sortedDates = [...availableDates].sort();
     const currentIndex = sortedDates.indexOf(currentDateStr);
-    
+
     if (currentIndex < sortedDates.length - 1) {
-      const nextDate = new Date(sortedDates[currentIndex + 1]);
+      const nextDate = parseISO(sortedDates[currentIndex + 1]);
       if (isValid(nextDate)) {
-        setSelectedYear(format(nextDate, 'yyyy'));
-        setSelectedMonth(format(nextDate, 'MM'));
-        setSelectedDay(format(nextDate, 'dd'));
-        setTempSelectedOverlayDate(nextDate); // Update temp state
+        setSelectedOverlayDate(nextDate);
       }
     }
   };
 
   // Navigate to previous available date
   const navigateToPrevDate = () => {
-    if (!tempSelectedOverlayDate || availableDates.length === 0) return;
-    
-    const currentDateStr = format(tempSelectedOverlayDate, 'yyyy-MM-dd');
+    if (!selectedOverlayDate || availableDates.length === 0) return;
+
+    const currentDateStr = format(selectedOverlayDate, 'yyyy-MM-dd');
     const sortedDates = [...availableDates].sort();
     const currentIndex = sortedDates.indexOf(currentDateStr);
-    
+
     if (currentIndex > 0) {
-      const prevDate = new Date(sortedDates[currentIndex - 1]);
+      const prevDate = parseISO(sortedDates[currentIndex - 1]);
       if (isValid(prevDate)) {
-        setSelectedYear(format(prevDate, 'yyyy'));
-        setSelectedMonth(format(prevDate, 'MM'));
-        setSelectedDay(format(prevDate, 'dd'));
-        setTempSelectedOverlayDate(prevDate); // Update temp state
+        setSelectedOverlayDate(prevDate);
       }
     }
   };
-  
+
   // Update the overlay date with the selected date
   const updateOverlayDate = () => {
     if (selectedYear && selectedMonth && selectedDay) {
       const dateStr = `${selectedYear}-${selectedMonth}-${selectedDay}`;
       if (availableDates.includes(dateStr)) {
-        const newDate = new Date(`${dateStr}T00:00:00`);
+        const newDate = parseISO(`${dateStr}T00:00:00`); // Parse with time to avoid timezone issues
         if (isValid(newDate)) {
           setSelectedOverlayDate(newDate);
         }
@@ -143,11 +173,11 @@ function MapOverlayDatePicker({
     }
   };
 
-  const isCurrentDateAvailable = tempSelectedOverlayDate && 
-    availableDates.includes(format(tempSelectedOverlayDate, 'yyyy-MM-dd'));
+  const isCurrentDateAvailable = selectedOverlayDate &&
+    availableDates.includes(format(selectedOverlayDate, 'yyyy-MM-dd'));
 
   return (
-    <Paper p="md" radius="md" withBorder>
+    <Paper p="md" radius="md" withBorder style={{ opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? 'none' : 'auto' }}>
       <Flex justify="space-between" align="center" mb="xs">
         <Badge>Map Overlay Date Picker</Badge>
         <Group gap="xs">
@@ -156,19 +186,19 @@ function MapOverlayDatePicker({
               <Info size={16} />
             </ActionIcon>
           </Tooltip>
-          <ActionIcon 
-            variant="light" 
-            color="blue" 
+          <ActionIcon
+            variant="light"
+            color="blue"
             onClick={navigateToPrevDate}
-            disabled={!tempSelectedOverlayDate || !isCurrentDateAvailable || availableDates.indexOf(format(tempSelectedOverlayDate, 'yyyy-MM-dd')) <= 0}
+            disabled={!selectedOverlayDate || !isCurrentDateAvailable || availableDates.indexOf(format(selectedOverlayDate, 'yyyy-MM-dd')) <= 0}
           >
             <ChevronLeft size={16} />
           </ActionIcon>
-          <ActionIcon 
-            variant="light" 
-            color="blue" 
+          <ActionIcon
+            variant="light"
+            color="blue"
             onClick={navigateToNextDate}
-            disabled={!tempSelectedOverlayDate || !isCurrentDateAvailable || availableDates.indexOf(format(tempSelectedOverlayDate, 'yyyy-MM-dd')) >= availableDates.length - 1}
+            disabled={!selectedOverlayDate || !isCurrentDateAvailable || availableDates.indexOf(format(selectedOverlayDate, 'yyyy-MM-dd')) >= availableDates.length - 1}
           >
             <ChevronRight size={16} />
           </ActionIcon>
@@ -182,16 +212,17 @@ function MapOverlayDatePicker({
           onChange={handleYearChange}
           data={years.map(year => ({ value: year, label: year }))}
           clearable={false}
+          disabled={disabled || years.length === 0}
         />
         <Select
           label="Month"
           value={selectedMonth}
           onChange={handleMonthChange}
-          data={months.map(month => ({ 
-            value: month, 
-            label: new Date(`2000-${month}-01`).toLocaleString('default', { month: 'short' }) 
+          data={months.map(month => ({
+            value: month,
+            label: new Date(`2000-${month}-01`).toLocaleString('default', { month: 'short' })
           }))}
-          disabled={months.length === 0}
+          disabled={disabled || months.length === 0}
           clearable={false}
         />
         <Select
@@ -199,16 +230,16 @@ function MapOverlayDatePicker({
           value={selectedDay}
           onChange={handleDayChange}
           data={days.map(day => ({ value: day, label: day }))}
-          disabled={days.length === 0}
+          disabled={disabled || days.length === 0}
           clearable={false}
         />
       </Group>
-      
-      <Button 
-        fullWidth 
-        variant="light" 
+
+      <Button
+        fullWidth
+        variant="light"
         onClick={updateOverlayDate}
-        disabled={!selectedYear || !selectedMonth || !selectedDay}
+        disabled={disabled || !selectedYear || !selectedMonth || !selectedDay || !isCurrentDateAvailable}
       >
         Update Map Overlay
       </Button>

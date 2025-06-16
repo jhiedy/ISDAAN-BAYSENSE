@@ -3,81 +3,90 @@ import { ActionIcon, Tooltip } from '@mantine/core';
 import { Eye, EyeOff } from 'lucide-react';
 import { fromLonLat } from "ol/proj";
 import TileLayer from "ol/layer/Tile";
-import OSM from "ol/source/OSM";
+import StadiaMaps from 'ol/source/StadiaMaps';
 import XYZ from "ol/source/XYZ";
 import View from "ol/View";
 import Map from "ol/Map";
+import Zoom from 'ol/control/Zoom';
+import Rotate from 'ol/control/Rotate';
+import Attribution from 'ol/control/Attribution';
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import GeoJSON from "ol/format/GeoJSON";
+import { Style, Fill, Stroke, Text as OLText } from 'ol/style';
 import "./Map.css";
 
-const parameterInfo = {
-  chlorophyll: { label: "Chl-a", unit: "µg/L" },
-  turbidity: { label: "Turbidity", unit: "NTU" },
-  tss: { label: "TSS", unit: "mg/L" },
-};
-
 function MapComponent({
-  startDate,
-  endDate,
-  parameter,
-  selectedOverlayDate,
-  cloudCover,
-  isCompositeMode,
-  centerCoordinates = [121.3301436972315, 14.078182532529903],
-  zoomLevel = 16.7,
+  rgbMapTileUrl,
+  wqMapTileUrl,
+  wqLegendMin,
+  wqLegendMax,
+  selectedParameter,
+  currentSelectedParamInfo,
+  assetFeatures,
+  showWqLayer, setShowWqLayer,
+  showRgbLayer, setShowRgbLayer,
+  showFishCagesLayer, setShowFishCagesLayer,
+  isLegendVisible, setIsLegendVisible,
+  onMapInstanceReady,
+  mapLoading,
+  centerCoordinates = [122.104577, 13.763949],
+  zoomLevel = 12.7,
 }) {
   const mapRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); 
-  const [showLayer1, setShowLayer1] = useState(true); 
-  const [showLayer2, setShowLayer2] = useState(true); 
-  const [showGenericCages, setShowGenericCages] = useState(true); 
-  const [isLegendVisible, setIsLegendVisible] = useState(true); 
 
-  // Refs for generic layers
-  const genericLayer1Ref = useRef(null);
-  const genericLayer2Ref = useRef(null);
-
+  const wqLayerRef = useRef(null);
+  const rgbLayerRef = useRef(null);
+  const assetLayerRef = useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  if (!mapRef.current || mapInstance) return;
+  const center = fromLonLat(centerCoordinates);
 
-    if (!mapRef.current || mapInstance) return;
-    const center = fromLonLat(centerCoordinates);
-    const map = new Map({
-      target: mapRef.current,
-      layers: [
-        new TileLayer({ source: new OSM() }) // Base OSM layer
-      ],
-      view: new View({ center: center, zoom: zoomLevel }),
-    });
-    setMapInstance(map);
+  const baseMapLayer = new TileLayer({
+    source: new StadiaMaps({
+      layer: 'alidade_smooth',
+      retina: true,
+      attributions: [
+        '<a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a>',
+        '<a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a>',
+        '<a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+      ]
+    }),
+    visible: true,
+  });
 
-    // Initialize generic layers
-    const layer1 = new TileLayer({
-      source: new XYZ({ url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' }),
-      visible: true,
-    });
-    const layer2 = new TileLayer({
-      source: new XYZ({ url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png' }),
-      visible: true,
-    });
+  const map = new Map({
+    target: mapRef.current,
+    layers: [baseMapLayer],
+    view: new View({ center: center, zoom: zoomLevel }),
+    controls: []
+  });
 
-    map.addLayer(layer1);
-    map.addLayer(layer2);
-    genericLayer1Ref.current = layer1;
-    genericLayer2Ref.current = layer2;
+  // Add custom controls (including attribution)
+  map.addControl(new Zoom());
+  map.addControl(new Rotate());
+  map.addControl(new Attribution({
+    collapsible: true,
+    collapsed: true,
+    tipLabel: 'Attribution'
+  }));
 
-    return () => {
-      if (map) {
-        map.setTarget(undefined);
-      }
-      clearTimeout(timer); // Clear the loading timer on unmount
-    };
-  }, []);
+  setMapInstance(map);
+  if (onMapInstanceReady) {
+    onMapInstanceReady(map);
+  }
 
- useEffect(() => {
+  return () => {
+    if (map) {
+      map.setTarget(undefined);
+    }
+  };
+}, []);
+
+  // Update map size on container resize
+  useEffect(() => {
     if (!mapInstance) return;
     const resizeObserver = new ResizeObserver(() => {
       mapInstance.updateSize();
@@ -92,57 +101,159 @@ function MapComponent({
     };
   }, [mapInstance]);
 
-  // Effects for toggling generic layer visibility
+  // Effect for Water Quality Layer
   useEffect(() => {
-    if (genericLayer1Ref.current) {
-      genericLayer1Ref.current.setVisible(showLayer1);
-    }
-  }, [showLayer1]);
+    if (!mapInstance) return;
 
+    if (wqLayerRef.current) {
+      mapInstance.removeLayer(wqLayerRef.current);
+      wqLayerRef.current = null;
+    }
+
+    if (wqMapTileUrl) {
+      const wqLayer = new TileLayer({
+        source: new XYZ({ url: wqMapTileUrl }),
+        visible: showWqLayer,
+        zIndex: 1, // Ensure it's above base map
+      });
+      mapInstance.addLayer(wqLayer);
+      wqLayerRef.current = wqLayer;
+    }
+  }, [mapInstance, wqMapTileUrl, showWqLayer]);
+
+  // Effect for RGB Layer
   useEffect(() => {
-    if (genericLayer2Ref.current) {
-      genericLayer2Ref.current.setVisible(showLayer2);
+    if (!mapInstance) return;
+
+    if (rgbLayerRef.current) {
+      mapInstance.removeLayer(rgbLayerRef.current);
+      rgbLayerRef.current = null;
     }
-  }, [showLayer2]);
 
+    if (rgbMapTileUrl) {
+      const rgbLayer = new TileLayer({
+        source: new XYZ({ url: rgbMapTileUrl }),
+        visible: showRgbLayer,
+        zIndex: 0, // Should be below WQ layer
+      });
+      mapInstance.addLayer(rgbLayer);
+      rgbLayerRef.current = rgbLayer;
+    }
+  }, [mapInstance, rgbMapTileUrl, showRgbLayer]);
 
-  const toggleLayer1 = () => setShowLayer1(!showLayer1);
-  const toggleLayer2 = () => setShowLayer2(!showLayer2);
-  const toggleGenericCages = () => setShowGenericCages(!showGenericCages); // Placeholder toggle
+  // Effect for Asset Features (FLAs/Polygons)
+  useEffect(() => {
+    if (!mapInstance) return;
+
+    if (assetLayerRef.current) {
+      mapInstance.removeLayer(assetLayerRef.current);
+      assetLayerRef.current = null;
+    }
+
+    if (assetFeatures && showFishCagesLayer) {
+      const vectorSource = new VectorSource({
+        features: new GeoJSON().readFeatures(assetFeatures, {
+          featureProjection: 'EPSG:3857', // Map projection
+        }),
+      });
+
+      const assetStyle = new Style({
+        fill: new Fill({
+          color: 'rgba(52, 152, 219, 0.2)', // Blue fill with some transparency
+        }),
+        stroke: new Stroke({
+          color: '#3498db',
+          width: 2,
+        }),
+        text: new OLText({
+            font: '14px Calibri,sans-serif',
+            fill: new Fill({ color: '#000' }),
+            stroke: new Stroke({ color: '#fff', width: 3 }),
+            placement: 'point',
+            textBaseline: 'middle',
+            textAlign: 'center',
+            overflow: true,
+        }),
+      });
+
+      const vectorLayer = new VectorLayer({
+        source: vectorSource,
+        style: function(feature) {
+            const name = feature.get('Name');
+            if (name) {
+                assetStyle.getText().setText(name);
+            } else {
+                assetStyle.getText().setText('');
+            }
+            return assetStyle;
+        },
+        visible: true,
+        zIndex: 2, // Above WQ and RGB layers
+      });
+
+      mapInstance.addLayer(vectorLayer);
+      assetLayerRef.current = vectorLayer;
+    }
+  }, [mapInstance, assetFeatures, showFishCagesLayer]);
+
+  // Toggle functions now update parent state
+  const toggleWqLayer = () => setShowWqLayer(!showWqLayer);
+  const toggleRgbLayer = () => setShowRgbLayer(!showRgbLayer);
+  const toggleFishCagesLayer = () => setShowFishCagesLayer(!showFishCagesLayer);
   const toggleLegendVisibility = () => setIsLegendVisible(prev => !prev);
 
+  const getLegendLabels = () => {
+    if (wqLegendMin === null || wqLegendMax === null || currentSelectedParamInfo === null) {
+      return {
+        title: "No Data",
+        minLabel: "N/A",
+        midLabel: "N/A",
+        maxLabel: "N/A",
+        unit: ""
+      };
+    }
+
+    const mid = (wqLegendMin + wqLegendMax) / 2;
+    return {
+      title: `${currentSelectedParamInfo.label} (${currentSelectedParamInfo.unit})`,
+      minLabel: wqLegendMin.toFixed(2),
+      midLabel: mid.toFixed(2),
+      maxLabel: wqLegendMax.toFixed(2),
+      unit: currentSelectedParamInfo.unit
+    };
+  };
+
+  const legendLabels = getLegendLabels();
 
   return (
     <div className="map-container">
-      {isLoading && (
-        <div className="map-loading">
-          <p>Loading Map...</p>
-        </div>
-      )}
+      {/* Removed the arbitrary isLoading overlay */}
       <div ref={mapRef} className="map"></div>
 
-      {isLegendVisible && (
+      {/* Render legend only if it's set to be visible AND map data is not loading */}
+      {isLegendVisible && !mapLoading && (
         <div className="map-legend">
           <div className="legend-header">
-            <p className="legend-title">Visualization Legend</p>
+            <p className="legend-title">{legendLabels.title}</p>
             <p style={{ fontSize: "12px", textAlign: "center", margin: "2px 0" }}>
-                Dates placeholder
+                {wqMapTileUrl ? "Current View Scale" : "No Parameter Data"}
             </p>
           </div>
-          <div className="legend-gradient"></div> {/* Generic gradient */}
-          <div className="legend-labels">
-            <span>Low</span>
-            <span>Medium</span>
-            <span>High</span>
+          <div className="legend-gradient" style={{ display: wqMapTileUrl ? 'block' : 'none' }}></div>
+          <div className="legend-labels" style={{ display: wqMapTileUrl ? 'flex' : 'none' }}>
+            <span>{legendLabels.minLabel}</span>
+            <span>{legendLabels.midLabel}</span>
+            <span>{legendLabels.maxLabel}</span>
           </div>
 
           <div className="toggles-container">
             <label className="toggle-container">
               <input
                 type="checkbox"
-                checked={showLayer1}
-                onChange={toggleLayer1}
+                checked={showWqLayer}
+                onChange={toggleWqLayer}
                 className="toggle-input"
+                disabled={!wqMapTileUrl} // Disable if no WQ tile available
               />
               <span className="toggle-switch"></span>
               <span className="toggle-label">Param Layer</span>
@@ -151,9 +262,10 @@ function MapComponent({
             <label className="toggle-container">
               <input
                 type="checkbox"
-                checked={showLayer2}
-                onChange={toggleLayer2}
+                checked={showRgbLayer}
+                onChange={toggleRgbLayer}
                 className="toggle-input"
+                disabled={!rgbMapTileUrl} // Disable if no RGB tile available
               />
               <span className="toggle-switch"></span>
               <span className="toggle-label">RGB Layer</span>
@@ -162,12 +274,13 @@ function MapComponent({
             <label className="toggle-container">
               <input
                 type="checkbox"
-                checked={showGenericCages}
-                onChange={toggleGenericCages}
+                checked={showFishCagesLayer}
+                onChange={toggleFishCagesLayer}
                 className="toggle-input"
+                disabled={!assetFeatures} // Disable if no asset features
               />
               <span className="toggle-switch"></span>
-              <span className="toggle-label">Fish Pens</span>
+              <span className="toggle-label">FLA Polygons</span>
             </label>
           </div>
         </div>
@@ -179,6 +292,7 @@ function MapComponent({
               color="blue"
               size="lg"
               onClick={toggleLegendVisibility}
+              disabled={mapLoading} // Disable button while map data is loading
             >
               {isLegendVisible ? <EyeOff size={18} /> : <Eye size={18} />}
             </ActionIcon>

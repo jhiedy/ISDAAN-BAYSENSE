@@ -15,11 +15,6 @@ import { DatePickerInput } from "@mantine/dates";
 import { HelpCircle, Info } from "lucide-react";
 import MapOverlayDatePicker from "./MapOverlayDatePicker";
 import HelpGuideModal from "./HelpGuideModal";
-import {
-  fetchAvailableDates,
-  getLatestAvailableDate,
-  isDateAvailable,
-} from "../../utils/dates";
 
 function LeftSidebar({
   startDate,
@@ -28,29 +23,29 @@ function LeftSidebar({
   setEndDate,
   selectedParameter,
   setSelectedParameter,
-  parameterType = "water-quality",
-  setParameterType,
-  updateParameterWithType,
+  // Removed parameterType and setParameterType props as they are not used in Dashboard.jsx
+  // Removed updateParameterWithType prop as it's not used in Dashboard.jsx
   selectedOverlayDate,
   setSelectedOverlayDate,
   cloudCover,
   setCloudCover,
   isCompositeMode,
   setIsCompositeMode,
+  availableDates, // New prop
+  setMapLoading, // New prop to indicate map loading
+  setMapError, // New prop to indicate map error
 }) {
-  const [tempParameterType, setTempParameterType] = useState(parameterType);
-  const [tempSelectedParameter, setTempSelectedParameter] =
-    useState(selectedParameter);
+  const [tempSelectedParameter, setTempSelectedParameter] = useState(selectedParameter);
   const [tempStartDate, setTempStartDate] = useState(startDate);
   const [tempEndDate, setTempEndDate] = useState(endDate);
   const [tempCloudCover, setTempCloudCover] = useState(cloudCover);
   const [tempCompositeMode, setTempCompositeMode] = useState(isCompositeMode);
-  const [tempSelectedOverlayDate, setTempSelectedOverlayDate] =
-    useState(selectedOverlayDate);
+  // Renamed to localSelectedOverlayDate to avoid confusion with prop
+  const [localSelectedOverlayDate, setLocalSelectedOverlayDate] = useState(selectedOverlayDate);
+
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [availableDates, setAvailableDates] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false); // Local loading for analysis button
+  const [analysisError, setAnalysisError] = useState(null); // Local error for analysis button
 
   const parameters = {
     "water-quality": [
@@ -61,15 +56,14 @@ function LeftSidebar({
   };
 
   useEffect(() => {
-    setTempParameterType(parameterType);
+    // Sync internal temp states with props
     setTempSelectedParameter(selectedParameter);
     setTempStartDate(startDate);
     setTempEndDate(endDate);
     setTempCloudCover(cloudCover);
     setTempCompositeMode(isCompositeMode);
-    setTempSelectedOverlayDate(selectedOverlayDate);
+    setLocalSelectedOverlayDate(selectedOverlayDate); // Sync local state with prop
   }, [
-    parameterType,
     selectedParameter,
     startDate,
     endDate,
@@ -79,97 +73,62 @@ function LeftSidebar({
   ]);
 
   useEffect(() => {
-    const loadAvailableDates = async () => {
-      if (tempStartDate && tempEndDate && tempCloudCover) {
-        try {
-          const dates = await fetchAvailableDates(
-            tempStartDate,
-            tempEndDate,
-            tempCloudCover
-          );
-          setAvailableDates(dates);
-
-          if (dates.length > 0) {
-            const latestDate = getLatestAvailableDate(dates);
-            if (
-              !tempSelectedOverlayDate ||
-              !isDateAvailable(tempSelectedOverlayDate, dates)
-            ) {
-              setTempSelectedOverlayDate(latestDate);
-            }
-          }
-        } catch (err) {
-          console.error("Error loading available dates:", err);
-        }
+    // If in single mode and availableDates are loaded, ensure localSelectedOverlayDate is valid
+    if (!tempCompositeMode && availableDates.length > 0) {
+      const formattedSelectedDate = localSelectedOverlayDate ? localSelectedOverlayDate.toISOString().split('T')[0] : null;
+      if (!formattedSelectedDate || !availableDates.includes(formattedSelectedDate)) {
+        // Find the latest available date
+        const latestDateStr = availableDates[availableDates.length - 1];
+        setLocalSelectedOverlayDate(new Date(latestDateStr));
       }
-    };
+    } else if (tempCompositeMode) {
+      setLocalSelectedOverlayDate(null); // Clear selection in composite mode
+    }
+  }, [availableDates, tempCompositeMode, localSelectedOverlayDate]); // Depend on availableDates and tempCompositeMode
 
-    loadAvailableDates();
-  }, [tempStartDate, tempEndDate, tempCloudCover, tempSelectedOverlayDate]);
-
+  // This useEffect ensures the selected parameter matches the type if changed.
+  // It relies on parameters object, which is local, so no prop dependencies here.
   useEffect(() => {
-    if (
-      tempParameterType &&
-      parameters[tempParameterType] &&
-      parameters[tempParameterType].length > 0
-    ) {
-      const paramBelongsToType = parameters[tempParameterType].some(
+    if (parameters["water-quality"] && parameters["water-quality"].length > 0) {
+      const paramBelongsToType = parameters["water-quality"].some(
         (p) => p.value === tempSelectedParameter
       );
       if (!paramBelongsToType) {
-        setTempSelectedParameter(parameters[tempParameterType][0].value);
+        setTempSelectedParameter(parameters["water-quality"][0].value);
       }
     }
-  }, [tempParameterType, tempSelectedParameter]);
+  }, [tempSelectedParameter]);
 
   const runAnalysis = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+    setIsAnalysisLoading(true); // Start local loading
+    setAnalysisError(null);     // Clear local error
 
-      setStartDate(tempStartDate);
-      setEndDate(tempEndDate);
-      setCloudCover(tempCloudCover);
-      setIsCompositeMode(tempCompositeMode);
+    // These setters will trigger the main useEffect in Dashboard.jsx
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
+    setSelectedParameter(tempSelectedParameter);
+    setCloudCover(tempCloudCover);
+    setIsCompositeMode(tempCompositeMode);
 
-      if (!tempCompositeMode) {
-        const dates = await fetchAvailableDates(
-          tempStartDate,
-          tempEndDate,
-          tempCloudCover
-        );
-        setAvailableDates(dates);
-
-        if (tempSelectedOverlayDate) {
-          setSelectedOverlayDate(tempSelectedOverlayDate);
-        } else if (dates.length > 0) {
-          const latestDate = getLatestAvailableDate(dates);
-          setSelectedOverlayDate(latestDate);
-          setTempSelectedOverlayDate(latestDate);
-        } else {
-            setSelectedOverlayDate(null);
-            setTempSelectedOverlayDate(null);
-        }
-      } else {
-          setSelectedOverlayDate(null);
-          setTempSelectedOverlayDate(null);
-      }
-
-
-      if (updateParameterWithType) {
-        updateParameterWithType(tempSelectedParameter, tempParameterType);
-      } else {
-        setSelectedParameter(tempSelectedParameter);
-        if (setParameterType) {
-          setParameterType(tempParameterType);
-        }
-      }
-    } catch (err) {
-      console.error("Error running analysis:", err);
-      setError(err.message || "Analysis failed");
-    } finally {
-      setIsLoading(false);
+    // Only update selectedOverlayDate if in single mode and a date is selected
+    if (!tempCompositeMode) {
+        setSelectedOverlayDate(localSelectedOverlayDate);
+    } else {
+        setSelectedOverlayDate(null); // Ensure null in composite mode
     }
+    
+    // Propagate loading and error states up to Dashboard
+    // This is optional, but helps Dashboard show overall map loading
+    setMapLoading(true);
+    setMapError(null);
+
+    // Since the actual data fetching is in Dashboard's useEffect,
+    // we just manage local UI feedback here.
+    // The Dashboard's useEffect will eventually setMapLoading(false)
+    // and setMapError if there's an issue with fetching map data.
+    // We can't await the Dashboard's useEffect here, so we just set loading.
+    // For now, setting local loading to false immediately after triggering parent update.
+    setIsAnalysisLoading(false);
   };
 
   return (
@@ -221,7 +180,7 @@ function LeftSidebar({
               label="Parameter"
               value={tempSelectedParameter}
               onChange={setTempSelectedParameter}
-              data={parameters[tempParameterType]}
+              data={parameters["water-quality"]}
             />
 
             <Select
@@ -239,7 +198,14 @@ function LeftSidebar({
                 </Group>
               }
               value={tempCompositeMode.toString()}
-              onChange={(value) => setTempCompositeMode(value === "true")}
+              onChange={(value) => {
+                setTempCompositeMode(value === "true");
+                if (value === "true") {
+                    setLocalSelectedOverlayDate(null);
+                } else if (availableDates.length > 0) {
+                    setLocalSelectedOverlayDate(new Date(availableDates[availableDates.length - 1]));
+                }
+              }}
               data={[
                 { value: "true", label: "Composite (median)" },
                 { value: "false", label: "Single" },
@@ -289,21 +255,21 @@ function LeftSidebar({
               variant="filled"
               color="blue"
               onClick={runAnalysis}
-              loading={isLoading}
+              loading={isAnalysisLoading}
             >
               Run Analysis
             </Button>
-            {error && (
+            {analysisError && (
                 <Text color="red" size="sm" mt="xs" ta="center">
-                    Error: {error}
+                    Error: {analysisError}
                 </Text>
             )}
           </div>
 
           <MapOverlayDatePicker
-            selectedOverlayDate={tempSelectedOverlayDate}
-            setSelectedOverlayDate={setSelectedOverlayDate}
-            availableDates={availableDates}
+            selectedOverlayDate={localSelectedOverlayDate}
+            setSelectedOverlayDate={setLocalSelectedOverlayDate} // Local state setter
+            availableDates={availableDates} // Prop from Dashboard
             disabled={tempCompositeMode}
           />
           <Text size="xs" c="dimmed" ta="center" mt="auto" pt="md" pb="xs">

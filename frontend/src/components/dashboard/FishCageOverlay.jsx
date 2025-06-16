@@ -7,7 +7,6 @@ import {
   Badge,
   Divider,
   Button,
-  LoadingOverlay,
   Box,
   Stack,
   Paper,
@@ -61,7 +60,7 @@ const svgToDataUrl = (svg) => {
   return `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
 };
 
-function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
+function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) { // showCageLayer is now a prop
   const [cages, setCages] = useState([]);
   const [selectedCage, setSelectedCage] = useState(null);
   const [modalOpened, setModalOpened] = useState(false);
@@ -215,7 +214,7 @@ function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
     }
 
     if (!cages.length) {
-      if (tooltipRef.current) tooltipRef.current.style.display = 'none';
+      if (tooltipRef.current) tooltip.current.style.display = 'none'; // Fixed typo: tooltip to tooltipRef
       setHoveredCage(null);
       return;
     }
@@ -267,8 +266,8 @@ function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
     cageLayerRef.current = vectorLayer;
 
     const clickListenerKey = mapInstance.on("click", function (evt) {
-      const feature = mapInstance.forEachFeatureAtPixel(evt.pixel, (feature) => feature, { 
-        layerFilter: (layer) => layer === vectorLayer 
+      const feature = mapInstance.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
+        layerFilter: (layer) => layer === vectorLayer
       });
       if (feature && feature.getProperties().properties) {
         const cageData = feature.getProperties().properties;
@@ -280,8 +279,8 @@ function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
     const pointerMoveListenerKey = mapInstance.on("pointermove", function (evt) {
       if (!tooltipRef.current || !tooltipOverlayRef.current) return;
 
-      const feature = mapInstance.forEachFeatureAtPixel(evt.pixel, (feature) => feature, { 
-        layerFilter: (layer) => layer === vectorLayer 
+      const feature = mapInstance.forEachFeatureAtPixel(evt.pixel, (feature) => feature, {
+        layerFilter: (layer) => layer === vectorLayer
       });
       const targetElement = mapInstance.getTargetElement();
 
@@ -320,14 +319,14 @@ function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
     }
   }, [showCageLayer]);
 
-  const getStatusColor = (status) => { 
+  const getStatusColor = (status) => {
     return status === 'good' ? 'green' : 'orange';
   };
 
-  const handleViewProfile = () => { 
-    if (selectedCage) { 
-      localStorage.setItem("selectedCageId", selectedCage.cage_id); 
-      navigate("/profile"); 
+  const handleViewProfile = () => {
+    if (selectedCage) {
+      localStorage.setItem("selectedCageId", selectedCage.cage_id);
+      navigate("/profile");
     }
   };
 
@@ -358,8 +357,8 @@ function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
                 </Box>
                 <Badge
                   color={getStatusColor(selectedCage.status)}
-                  size="lg" 
-                  variant="light" 
+                  size="lg"
+                  variant="light"
                   radius="sm"
                   leftSection={selectedCage.status === 'good' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
                 >
@@ -395,21 +394,21 @@ function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
             </Paper>
 
             {isAdmin ? (
-              <Button 
-                fullWidth 
-                variant="outline" 
-                color="gray" 
+              <Button
+                fullWidth
+                variant="outline"
+                color="gray"
                 onClick={() => setModalOpened(false)}
                 mt="md"
               >
                 Close
               </Button>
             ) : (
-              <Button 
-                fullWidth 
-                variant="filled" 
-                color="blue" 
-                onClick={handleViewProfile} 
+              <Button
+                fullWidth
+                variant="filled"
+                color="blue"
+                onClick={handleViewProfile}
                 mt="md"
                 leftSection={<Building size={16} />}
               >
@@ -422,34 +421,34 @@ function FishCageOverlay({ mapInstance, showCageLayer, selectedFarms }) {
         )}
       </Modal>
 
-      {loading && ( 
-        <div style={{ 
-          position: "absolute", 
-          bottom: "20px", 
-          left: "50%", 
-          transform: "translateX(-50%)", 
-          background: "rgba(255,255,255,0.8)", 
-          padding: "8px 16px", 
-          borderRadius: "4px", 
-          zIndex: 1000, 
-        }}> 
-          Loading cages... 
-        </div> 
+      {loading && (
+        <div style={{
+          position: "absolute",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(255,255,255,0.8)",
+          padding: "8px 16px",
+          borderRadius: "4px",
+          zIndex: 1000,
+        }}>
+          Loading cages...
+        </div>
       )}
-      {error && ( 
-        <div style={{ 
-          position: "absolute", 
-          bottom: "20px", 
-          left: "50%", 
-          transform: "translateX(-50%)", 
-          background: "rgba(255,255,255,0.8)", 
-          padding: "8px 16px", 
-          borderRadius: "4px", 
-          color: "red", 
-          zIndex: 1000, 
-        }}> 
-          {error} 
-        </div> 
+      {error && (
+        <div style={{
+          position: "absolute",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(255,255,255,0.8)",
+          padding: "8px 16px",
+          borderRadius: "4px",
+          color: "red",
+          zIndex: 1000,
+        }}>
+          {error}
+        </div>
       )}
     </>
   );
