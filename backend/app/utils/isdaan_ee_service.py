@@ -120,11 +120,10 @@ def get_combined_roi(asset_id: str) -> ee.Geometry:
 @ensure_ee_initialized
 def filter_collection(roi: ee.Geometry, start_date: str, end_date: str, cloud_cover: int = 20) -> ee.ImageCollection:
     """Filter Sentinel-2 collection by date, a given ROI, and cloud cover."""
-    return ee.ImageCollection('COPERNICUS/S2_HARMONIZED') \
+    return ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
         .filterBounds(roi) \
         .filterDate(start_date, end_date) \
         .filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', cloud_cover)
-
 @ensure_ee_initialized
 def get_available_dates_for_asset(start_date: str, end_date: str, asset_id: str, cloud_cover: int = 20):
     """Fetch available dates for Sentinel-2 imagery for a given asset and date range."""
