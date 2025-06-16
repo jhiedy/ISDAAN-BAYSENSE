@@ -15,6 +15,7 @@ import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
 import { Style, Fill, Stroke, Text as OLText } from 'ol/style';
 import "./Map.css";
+import MapControls from "./MapControls";
 
 function MapComponent({
   rgbMapTileUrl,
@@ -35,6 +36,7 @@ function MapComponent({
 }) {
   const mapRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
+  const [isControlsOpen, setIsControlsOpen] = useState(true);
 
   const wqLayerRef = useRef(null);
   const rgbLayerRef = useRef(null);
@@ -201,6 +203,7 @@ function MapComponent({
   const toggleRgbLayer = () => setShowRgbLayer(!showRgbLayer);
   const toggleFishCagesLayer = () => setShowFishCagesLayer(!showFishCagesLayer);
   const toggleLegendVisibility = () => setIsLegendVisible(prev => !prev);
+  const toggleControlsVisibility = () => setIsControlsOpen(prev => !prev);
 
   const getLegendLabels = () => {
     if (wqLegendMin === null || wqLegendMax === null || currentSelectedParamInfo === null) {
@@ -245,44 +248,6 @@ function MapComponent({
             <span>{legendLabels.midLabel}</span>
             <span>{legendLabels.maxLabel}</span>
           </div>
-
-          <div className="toggles-container">
-            <label className="toggle-container">
-              <input
-                type="checkbox"
-                checked={showWqLayer}
-                onChange={toggleWqLayer}
-                className="toggle-input"
-                disabled={!wqMapTileUrl} // Disable if no WQ tile available
-              />
-              <span className="toggle-switch"></span>
-              <span className="toggle-label">Param Layer</span>
-            </label>
-
-            <label className="toggle-container">
-              <input
-                type="checkbox"
-                checked={showRgbLayer}
-                onChange={toggleRgbLayer}
-                className="toggle-input"
-                disabled={!rgbMapTileUrl} // Disable if no RGB tile available
-              />
-              <span className="toggle-switch"></span>
-              <span className="toggle-label">RGB Layer</span>
-            </label>
-
-            <label className="toggle-container">
-              <input
-                type="checkbox"
-                checked={showFishCagesLayer}
-                onChange={toggleFishCagesLayer}
-                className="toggle-input"
-                disabled={!assetFeatures} // Disable if no asset features
-              />
-              <span className="toggle-switch"></span>
-              <span className="toggle-label">FLA Polygons</span>
-            </label>
-          </div>
         </div>
       )}
       <div className="legend-toggle-button">
@@ -298,6 +263,20 @@ function MapComponent({
             </ActionIcon>
         </Tooltip>
       </div>
+
+      <MapControls
+        showWqLayer={showWqLayer}
+        toggleWqLayer={toggleWqLayer}
+        disableWq={!wqMapTileUrl}
+        showRgbLayer={showRgbLayer}
+        toggleRgbLayer={toggleRgbLayer}
+        disableRgb={!rgbMapTileUrl}
+        showFishCagesLayer={showFishCagesLayer}
+        toggleFishCagesLayer={toggleFishCagesLayer}
+        disableFishCages={!assetFeatures}
+        isControlsOpen={isControlsOpen}
+        toggleControls={toggleControlsVisibility}
+      />
     </div>
   );
 }

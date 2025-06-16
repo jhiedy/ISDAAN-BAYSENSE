@@ -1,0 +1,89 @@
+.map-controls-container {
+  position: absolute;
+  top: 140px;
+  left: 19px;
+  z-index: 102;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0px;
+}
+
+.toggle-button-container {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: border-radius 0.2s ease;
+}
+
+.toggle-button-container.controls-open {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom: none;
+}
+
+.controls-toggle-button {
+  transition: all 0.3s ease;
+  background-color: transparent;
+}
+
+.controls-toggle-button:hover {
+  transform: translateY(-2px);
+  background-color: rgba(0,0,0,0.1);
+}
+
+.controls-overlay {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  border-top-right-radius: 0;
+  border-top-left-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  gap: 4px;
+  width: 100%;
+}
+
+.control-item:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.control-label {
+  font-size: 12px;
+  color: 'black';
+  white-space: nowrap;
+}
+
+.control-item .mantine-ActionIcon-root:hover {
+  background-color: rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+  .map-controls-container {
+    top: 10px;
+    left: 10px;
+  }
+}
