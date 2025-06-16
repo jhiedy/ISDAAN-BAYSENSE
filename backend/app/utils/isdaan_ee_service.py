@@ -347,3 +347,53 @@ def get_specific_date_rgb_tiles_for_asset(date: str, asset_id: str, cloud_cover:
     rgb_image = create_rgb_visualization(image)
     tile_url = rgb_image.getMapId()['tile_fetcher'].url_format
     return tile_url
+
+@ensure_ee_initialized
+def create_geometry_from_coordinates(coordinates_list):
+    """
+    Creates an ee.Geometry from a list of polygon coordinates.
+    Each polygon is defined by a list of coordinate points.
+    """
+    polygons = []
+    for coords in coordinates_list:
+        # Convert coordinates to ee.Geometry.Polygon
+        polygon = ee.Geometry.Polygon(coords)
+        polygons.append(polygon)
+    
+    # Combine all polygons into a single geometry
+    return ee.Geometry.MultiPolygon([poly.coordinates() for poly in polygons])
+
+@ensure_ee_initialized
+def get_composite_rgb_tiles_for_polygons(start_date: str, end_date: str, coordinates_list: list, cloud_cover: int = 20) -> str:
+    """
+    Generate composite RGB visualization tiles for given polygon coordinates.
+    Similar to get_composite_rgb_tiles_for_asset but uses direct coordinates instead of an asset.
+    """
+    roi = create_geometry_from_coordinates(coordinates_list)
+    collection = filter_collection(roi, start_date, end_date, cloud_cover)
+    median_image = collection.median().clip(roi)
+    rgb_image = create_rgb_visualization(median_image)
+    tile_url = rgb_image.getMapId()['tile_fetcher'].url_format
+    return tile_url
+
+@ensure_ee_initialized
+def get_specific_date_rgb_tiles_for_polygons(date: str, coordinates_list: list, cloud_cover: int = 20) -> str:
+    """
+    Generate specific date RGB visualization tiles for given polygon coordinates.
+    Similar to get_specific_date_rgb_tiles_for_asset but uses direct coordinates instead of an asset.
+    """
+    roi = create_geometry_from_coordinates(coordinates_list)
+    next_day = datetime.datetime.strptime(date, '%Y-%m-%d') + datetime.timedelta(days=1)
+    next_day_str = next_day.strftime('%Y-%m-%d')
+    
+    collection = filter_collection(roi, date, next_day_str, cloud_cover)
+    
+    count = collection.size().getInfo()
+    if count == 0:
+        logging.warning(f"No image found for date {date} for the provided polygons")
+        return None
+        
+    image = collection.first().clip(roi)
+    rgb_image = create_rgb_visualization(image)
+    tile_url = rgb_image.getMapId()['tile_fetcher'].url_format
+    return tile_url

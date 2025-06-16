@@ -137,7 +137,7 @@ function Dashboard() {
                 let rgbTileUrl = null;
                 if (isCompositeMode) {
                     const rgbCompositeResponse = await axios.get(
-                        `${import.meta.env.VITE_API_BASE_URL}/get_composite_rgb_tile`,
+                        `${import.meta.env.VITE_API_BASE_URL}/get_composite_rgb_tile_for_polygons`,
                         {
                             params: {
                                 start_date: startDate.toISOString().split('T')[0],
@@ -149,7 +149,7 @@ function Dashboard() {
                     rgbTileUrl = rgbCompositeResponse.data.tile_url;
                 } else if (effectiveOverlayDate) {
                     const rgbSpecificResponse = await axios.get(
-                        `${import.meta.env.VITE_API_BASE_URL}/get_specific_date_rgb_tile`,
+                        `${import.meta.env.VITE_API_BASE_URL}/get_specific_date_rgb_tile_for_polygons`,
                         {
                             params: {
                                 date: effectiveOverlayDate.toISOString().split('T')[0],

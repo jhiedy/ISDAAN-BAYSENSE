@@ -11,7 +11,9 @@ from app.utils.isdaan_ee_service import (
     get_specific_date_rgb_tiles_for_asset,
     get_available_dates_for_asset,
     get_parameter_values_per_polygon,
-    get_asset_details 
+    get_asset_details,
+    get_composite_rgb_tiles_for_polygons,
+    get_specific_date_rgb_tiles_for_polygons
 )
 
 # Load environment variables
@@ -19,6 +21,30 @@ load_dotenv()
 
 # Load the asset ID from environment variables to be used in all routes
 ISDAAN_FLAS_ASSET_ID = os.getenv("ISDAAN_FLAS_ASSET_ID")
+
+POLYGON_COORDINATES = [
+    [  # Polygon 1
+        [122.14543603785081, 13.777838221086464],
+        [122.10355015340555, 13.756830050974958],
+        [122.1814853520684, 13.641418298240637],
+        [122.22371455655231, 13.667274125192243],
+        [122.14543603785081, 13.777838221086464]
+    ],
+    [  # Polygon 2
+        [122.00021232701322, 13.871618073925353],
+        [121.98774720431794, 13.876774399603521],
+        [121.97061761159739, 13.836220748853057],
+        [121.9842844171512, 13.829648774819377],
+        [122.00021232701322, 13.871618073925353]
+    ],
+    [  # Polygon 3
+        [122.00425526616627, 13.808011578130788],
+        [122.01300999639088, 13.808011578130788],
+        [122.01300999639088, 13.816179760508039],
+        [122.00425526616627, 13.816179760508039],
+        [122.00425526616627, 13.808011578130788]
+    ]
+]
 
 tile_routes = Blueprint("tile_routes", __name__)
 
@@ -106,6 +132,49 @@ def get_specific_date_rgb_tile_route():
         return jsonify({"error": "Date parameter is required"}), 400
 
     tile_url = get_specific_date_rgb_tiles_for_asset(date, ISDAAN_FLAS_ASSET_ID, cloud_cover)
+    
+    if not tile_url:
+        return jsonify({"error": "No imagery available for the specified date"}), 404
+
+    return jsonify({"tile_url": tile_url})
+
+@tile_routes.route('/get_composite_rgb_tile_for_polygons', methods=['GET'])
+def get_composite_rgb_tile_for_polygons_route():
+    """
+    Generates a true-color (RGB) composite tile layer for the hardcoded polygons.
+    """
+    start_date = request.args.get('start_date', '2023-01-01')
+    end_date = request.args.get('end_date', '2025-12-31')
+    cloud_cover = int(request.args.get('cloud_cover', 20))
+
+    tile_url = get_composite_rgb_tiles_for_polygons(
+        start_date=start_date,
+        end_date=end_date,
+        coordinates_list=POLYGON_COORDINATES,
+        cloud_cover=cloud_cover
+    )
+    
+    if not tile_url:
+        return jsonify({"error": "Failed to generate RGB tiles for polygons"}), 500
+
+    return jsonify({"tile_url": tile_url})
+
+@tile_routes.route('/get_specific_date_rgb_tile_for_polygons', methods=['GET'])
+def get_specific_date_rgb_tile_for_polygons_route():
+    """
+    Generates a true-color (RGB) tile layer for a specific date for the hardcoded polygons.
+    """
+    date = request.args.get('date')
+    cloud_cover = int(request.args.get('cloud_cover', 20))
+    
+    if not date:
+        return jsonify({"error": "Date parameter is required"}), 400
+
+    tile_url = get_specific_date_rgb_tiles_for_polygons(
+        date=date,
+        coordinates_list=POLYGON_COORDINATES,
+        cloud_cover=cloud_cover
+    )
     
     if not tile_url:
         return jsonify({"error": "No imagery available for the specified date"}), 404
