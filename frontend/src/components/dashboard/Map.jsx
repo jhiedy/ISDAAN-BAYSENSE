@@ -9,8 +9,19 @@ import View from "ol/View";
 import Map from "ol/Map";
 import "./Map.css";
 
+const parameterInfo = {
+  chlorophyll: { label: "Chl-a", unit: "µg/L" },
+  turbidity: { label: "Turbidity", unit: "NTU" },
+  tss: { label: "TSS", unit: "mg/L" },
+};
 
 function MapComponent({
+  startDate,
+  endDate,
+  parameter,
+  selectedOverlayDate,
+  cloudCover,
+  isCompositeMode,
   centerCoordinates = [121.3301436972315, 14.078182532529903],
   zoomLevel = 16.7,
 }) {

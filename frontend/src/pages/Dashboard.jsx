@@ -1,8 +1,6 @@
 import { useState } from 'react';
-// Import necessary Mantine components and hooks
-import { AppShell, Burger, Box, Group, useMantineTheme } from "@mantine/core";
+import { AppShell, Burger, Group, useMantineTheme } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-// Import your custom components
 import LeftSidebar from "../components/dashboard/LeftSidebar";
 import MapComponent from "../components/dashboard/Map";
 import RightSidebar from "../components/dashboard/RightSidebar";
@@ -46,7 +44,7 @@ function Dashboard() {
             >
                 {/* --- Left Sidebar (Navbar Content) --- */}
                 <AppShell.Navbar
-                    p="md" // Padding inside the Navbar/Drawer
+                    p="md"
                     style={{ backgroundColor: '#F7F9F9', height: '100%', borderRight: `1px solid ${theme.colors.gray[3]}` }}
                 >
                     {/* Show close button only in mobile drawer view */}
