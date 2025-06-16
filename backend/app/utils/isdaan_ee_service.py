@@ -154,7 +154,7 @@ def get_visualization_and_params(image: ee.Image, parameter: str, roi: ee.Geomet
     Processes an image for a given parameter, applies a percentile stretch
     based on the ROI, and returns the visualized image and stretch parameters.
     """
-    masked_image = apply_water_mask(image).clip(roi)
+    masked_image = image.clip(roi)
     
     # Determine the band name for processing
     if parameter == 'chlorophyll':
@@ -245,15 +245,13 @@ def get_specific_date_tiles_for_asset(parameter: str, date: str, asset_id: str, 
 
 @ensure_ee_initialized
 def _prepare_parameter_image(image: ee.Image, parameter: str):
-    """Helper to calculate a parameter for an image and set the date."""
-    masked_image = apply_water_mask(image)
-    
+    """Helper to calculate a parameter for an image and set the date."""    
     if parameter == 'chlorophyll':
-        processed = masked_image.normalizedDifference(['B5', 'B4']).rename(parameter)
+        processed = image.normalizedDifference(['B5', 'B4']).rename(parameter)
     elif parameter == 'turbidity':
-        processed = masked_image.normalizedDifference(['B4', 'B3']).rename(parameter)
+        processed = image.normalizedDifference(['B4', 'B3']).rename(parameter)
     elif parameter == 'tss':
-        processed = masked_image.normalizedDifference(['B2', 'B8']).rename(parameter)
+        processed = image.normalizedDifference(['B2', 'B8']).rename(parameter)
     else:
         return None # Return None if the parameter is invalid
         

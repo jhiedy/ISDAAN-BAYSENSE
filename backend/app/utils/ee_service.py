@@ -149,7 +149,7 @@ def get_visualization_and_params(image, parameter):
     Processes an image for a given parameter, applies a stretch for visualization,
     and returns both the visualized image and the stretch parameters (min, max).
     """
-    masked_image = apply_water_mask(image).clip(get_roi())
+    masked_image = image.clip(get_roi())
     
     # Determine the band name for processing and for percentile calculation
     if parameter == 'chlorophyll':
@@ -294,7 +294,7 @@ def get_specific_date_rgb_tiles(date, cloud_cover=20):
 @ensure_ee_initialized
 def _prepare_parameter_image(image, parameter):
     """Helper function to process an image for a specific parameter."""
-    masked_image = apply_water_mask(image)
+    masked_image = image
     
     if parameter == 'chlorophyll':
         processed = masked_image.normalizedDifference(['B5', 'B4']).rename(parameter)
