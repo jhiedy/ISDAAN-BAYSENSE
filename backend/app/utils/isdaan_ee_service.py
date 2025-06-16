@@ -275,8 +275,7 @@ def get_parameter_values_per_polygon(parameter: str, start_date: str, end_date: 
         combined_roi = get_combined_roi(asset_id)
         collection = filter_collection(combined_roi, start_date, end_date, cloud_cover)
         
-        # Filter out images where the parameter can't be calculated (returns None)
-        processed_collection = collection.map(lambda img: _prepare_parameter_image(img, parameter)).filter(ee.Filter.notNull([parameter]))
+        processed_collection = collection.map(lambda img: _prepare_parameter_image(img, parameter))
 
         results = {}
 
