@@ -38,10 +38,10 @@ function MapComponent({
   const mapRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
   const [isControlsOpen, setIsControlsOpen] = useState(true);
+  const [showTooltips, setShowTooltips] = useState(true);
 
   const wqLayerRef = useRef(null);
   const rgbLayerRef = useRef(null);
-  const assetLayerRef = useRef(null);
 
   useEffect(() => {
   if (!mapRef.current || mapInstance) return;
@@ -150,6 +150,7 @@ function MapComponent({
   const toggleFishCagesLayer = () => setShowFishCagesLayer(!showFishCagesLayer);
   const toggleLegendVisibility = () => setIsLegendVisible(prev => !prev);
   const toggleControlsVisibility = () => setIsControlsOpen(prev => !prev);
+  const toggleTooltips = () => setShowTooltips(prev => !prev);
 
   // Helper to calculate intermediate legend labels
   const getIntermediateLabels = (min, max, count = 5) => {
@@ -177,13 +178,13 @@ function MapComponent({
 
   return (
     <div className="map-container">
-      {/* Removed the arbitrary isLoading overlay */}
       <div ref={mapRef} className="map"></div>
 
-      <AssetFeaturesLayer 
-        map={mapInstance} 
-        assetFeatures={assetFeatures} 
-        visible={showFishCagesLayer} 
+      <AssetFeaturesLayer
+        map={mapInstance}
+        assetFeatures={assetFeatures}
+        visible={showFishCagesLayer}
+        showTooltips={showTooltips}
       />
 
       {/* Render legend only if it's set to be visible AND map data is not loading */}
@@ -191,9 +192,13 @@ function MapComponent({
         <div className="map-legend">
           <div className="legend-header">
             <p className="legend-title">{legendLabels.title}</p>
-            <p style={{ fontSize: "12px", textAlign: "center", margin: "2px 0" }}>
-                {wqMapTileUrl ? "Current View Scale" : "No Parameter Data"}
+            <p style={{ fontSize: "12px", textAlign: "center", margin: "-5px" }}>
+                {wqMapTileUrl ? "Concentration Scale" : "No Parameter Data"}
             </p>
+          </div>
+          <div className="legend-labels" style={{ display: wqMapTileUrl ? 'flex' : 'none' }}>
+            <span>Low</span>
+            <span>High</span>
           </div>
           <div className="legend-gradient" style={{ display: wqMapTileUrl ? 'block' : 'none' }}></div>
           <div className="legend-labels">
@@ -201,6 +206,37 @@ function MapComponent({
               <span key={index}>{label}</span>
             ))}
           </div>
+
+          {/* Asset Feature Layer Legend */}
+          {showFishCagesLayer && (
+            <div className="asset-legend">
+              <p className="legend-title">FLA Legend</p>
+              <div className="legend-item">
+                <div className="legend-color-box dashed-border"></div>
+                <span>FLA region</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color-box solid-border"></div>
+                <span>Hovered</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color-box blue-fill"></div>
+                <span>Valid</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color-box red-fill"></div>
+                <span>Expired</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color-box orange-fill"></div>
+                <span>For Renewal</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color-box yellow-fill"></div>
+                <span>Selected</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
       <div className="legend-toggle-button">
@@ -210,7 +246,7 @@ function MapComponent({
               color="blue"
               size="lg"
               onClick={toggleLegendVisibility}
-              disabled={mapLoading} // Disable button while map data is loading
+              disabled={mapLoading}
             >
               {isLegendVisible ? <EyeOff size={18} /> : <Eye size={18} />}
             </ActionIcon>
@@ -229,6 +265,8 @@ function MapComponent({
         disableFishCages={!assetFeatures}
         isControlsOpen={isControlsOpen}
         toggleControls={toggleControlsVisibility}
+        showTooltips={showTooltips}
+        toggleTooltips={toggleTooltips}
       />
     </div>
   );

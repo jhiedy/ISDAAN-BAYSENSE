@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
-import { Style, Fill, Stroke, Text as OLText } from 'ol/style';
+import { Style, Fill, Stroke } from 'ol/style';
 import Overlay from 'ol/Overlay';
 
 // Helper function to format dates
@@ -19,7 +19,7 @@ const formatDate = (dateString) => {
   }
 };
 
-function AssetFeaturesLayer({ map, assetFeatures, visible }) {
+function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips }) {
   const layerRef = useRef(null);
   const tooltipRef = useRef(null);
   const tooltipOverlayRef = useRef(null);
@@ -46,10 +46,10 @@ function AssetFeaturesLayer({ map, assetFeatures, visible }) {
       }),
       stroke: new Stroke({
         color: strokeColor,
-        width: hover ? 3 : 2,
-        lineDash: hover ? [] : [5, 5], // Solid line when hovered
+        width: hover ? 4 : 2,
+        lineDash: hover ? [] : [5, 5],
       }),
-      zIndex: hover ? 1 : 0, // Higher z-index when hovered
+      zIndex: hover ? 1 : 0,
     });
   };
 
@@ -69,9 +69,9 @@ function AssetFeaturesLayer({ map, assetFeatures, visible }) {
           color: 'rgba(0, 0, 0, 0.7)',
           width: 4,
         }),
-        zIndex: 10, // Very high z-index to ensure it's on top
+        zIndex: 10,
       }),
-      zIndex: 100, // Above all other layers
+      zIndex: 100,
     });
     
     map.addLayer(highlightLayer);
@@ -82,11 +82,12 @@ function AssetFeaturesLayer({ map, assetFeatures, visible }) {
   useEffect(() => {
     if (!map) return;
 
-    // Create tooltip overlay
+    // Create tooltip overlay with new positioning
     const tooltipOverlay = new Overlay({
       element: tooltipRef.current,
       positioning: 'bottom-center',
-      offset: [0, -10],
+      offset: [0, -15],
+      stopEvent: false,
     });
     map.addOverlay(tooltipOverlay);
     tooltipOverlayRef.current = tooltipOverlay;
@@ -159,27 +160,28 @@ function AssetFeaturesLayer({ map, assetFeatures, visible }) {
         }
       }
 
-      if (feature) {
+      if (feature && showTooltips) {
         const properties = feature.getProperties();
         const formattedDateApprv = formatDate(properties['Date Apprv']);
         const formattedDateExp = formatDate(properties['Date Exp']);
 
         const tooltipContent = `
-          <div class="asset-tooltip">
+            <div class="asset-tooltip">
+            <div class="tooltip-arrow"></div>
             <h4>${properties.Name || 'N/A'}</h4>
             <div class="tooltip-row"><span class="tooltip-label">Location:</span> ${properties.Barangay || 'N/A'}, ${properties.Mun_Name || 'N/A'}, ${properties.Province || 'N/A'}</div>
             <div class="tooltip-row"><span class="tooltip-label">Area:</span> ${properties.Area ? `${properties.Area} ha` : 'N/A'}</div>
             <div class="tooltip-row"><span class="tooltip-label">Approved:</span> ${formattedDateApprv}</div>
             <div class="tooltip-row"><span class="tooltip-label">Expires:</span> ${formattedDateExp}</div>
             <div class="tooltip-row"><span class="tooltip-label">Status:</span> <span class="status-${properties.Status?.toLowerCase().replace(/\s+/g, '-') || 'unknown'}">${properties.Status || 'N/A'}</span></div>
-          </div>
+            </div>
         `;
         element.innerHTML = tooltipContent;
         tooltipOverlayRef.current.setPosition(evt.coordinate);
         element.style.display = 'block';
-      } else {
+        } else {
         element.style.display = 'none';
-      }
+        }
     };
 
     map.on('pointermove', pointerMoveHandler);
@@ -224,7 +226,7 @@ function AssetFeaturesLayer({ map, assetFeatures, visible }) {
         map.removeLayer(highlightLayerRef.current);
       }
     };
-  }, [map, assetFeatures, visible]);
+  }, [map, assetFeatures, visible, showTooltips]);
 
   return (
     <div ref={tooltipRef} className="asset-feature-tooltip"></div>

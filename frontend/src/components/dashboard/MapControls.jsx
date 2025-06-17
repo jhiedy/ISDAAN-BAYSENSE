@@ -1,12 +1,13 @@
 import React from 'react';
 import { ActionIcon, Tooltip, Collapse } from '@mantine/core';
-import { Droplet, Layers, Layers2, MapPin, Satellite } from 'lucide-react';
+import { Droplet, Layers, Layers2, MapPin, Satellite, Info } from 'lucide-react';
 import './MapControls.css';
 
 function MapControls({
   showWqLayer, toggleWqLayer, disableWq,
   showRgbLayer, toggleRgbLayer, disableRgb,
   showFishCagesLayer, toggleFishCagesLayer, disableFishCages,
+  showTooltips, toggleTooltips,
   isControlsOpen, toggleControls
 }) {
   return (
@@ -27,6 +28,22 @@ function MapControls({
 
       <Collapse in={isControlsOpen}>
         <div className="controls-overlay">
+
+          <div className="control-item">
+            <Tooltip label={showRgbLayer ? "Hide True Color Layer" : "Show True Color Layer"} position="right" withArrow>
+              <ActionIcon
+                variant={showRgbLayer ? "filled" : "light"}
+                color={showRgbLayer ? "blue" : "gray"}
+                size="md"
+                onClick={toggleRgbLayer}
+                disabled={disableRgb}
+              >
+                <Satellite size={20} />
+              </ActionIcon>
+            </Tooltip>
+            <span className="control-label">RGB</span>
+          </div>
+          
           <div className="control-item">
             <Tooltip label={showWqLayer ? "Hide Water Quality Layer" : "Show Water Quality Layer"} position="right" withArrow>
               <ActionIcon
@@ -43,22 +60,7 @@ function MapControls({
           </div>
 
           <div className="control-item">
-            <Tooltip label={showRgbLayer ? "Hide True Color Layer" : "Show True Color Layer"} position="right" withArrow>
-              <ActionIcon
-                variant={showRgbLayer ? "filled" : "light"}
-                color={showRgbLayer ? "blue" : "gray"}
-                size="md"
-                onClick={toggleRgbLayer}
-                disabled={disableRgb}
-              >
-                <Satellite size={20} />
-              </ActionIcon>
-            </Tooltip>
-            <span className="control-label">RGB</span>
-          </div>
-
-          <div className="control-item">
-            <Tooltip label={showFishCagesLayer ? "Hide FLA Details" : "Show FLA Polygons"} position="right" withArrow>
+            <Tooltip label={showFishCagesLayer ? "Hide FLA Polygons" : "Show FLA Polygons"} position="right" withArrow>
               <ActionIcon
                 variant={showFishCagesLayer ? "filled" : "light"}
                 color={showFishCagesLayer ? "blue" : "gray"}
@@ -70,6 +72,20 @@ function MapControls({
               </ActionIcon>
             </Tooltip>
             <span className="control-label">FLA</span>
+          </div>
+
+          <div className="control-item">
+            <Tooltip label={showTooltips ? "Hide FLA Details" : "Show FLA Details"} position="right" withArrow>
+              <ActionIcon
+                variant={showTooltips ? "filled" : "light"}
+                color={showTooltips ? "blue" : "gray"}
+                size="md"
+                onClick={toggleTooltips}
+              >
+                <Info size={20} />
+              </ActionIcon>
+            </Tooltip>
+            <span className="control-label">Tooltip</span>
           </div>
         </div>
       </Collapse>
