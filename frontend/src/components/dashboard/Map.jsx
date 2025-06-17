@@ -16,6 +16,7 @@ import GeoJSON from "ol/format/GeoJSON";
 import { Style, Fill, Stroke, Text as OLText } from 'ol/style';
 import "./Map.css";
 import MapControls from "./MapControls";
+import AssetFeaturesLayer from "./AssetFeaturesLayer";
 
 function MapComponent({
   rgbMapTileUrl,
@@ -143,61 +144,6 @@ function MapComponent({
     }
   }, [mapInstance, rgbMapTileUrl, showRgbLayer]);
 
-  // Effect for Asset Features (FLAs/Polygons)
-  useEffect(() => {
-    if (!mapInstance) return;
-
-    if (assetLayerRef.current) {
-      mapInstance.removeLayer(assetLayerRef.current);
-      assetLayerRef.current = null;
-    }
-
-    if (assetFeatures && showFishCagesLayer) {
-      const vectorSource = new VectorSource({
-        features: new GeoJSON().readFeatures(assetFeatures, {
-          featureProjection: 'EPSG:3857', // Map projection
-        }),
-      });
-
-      const assetStyle = new Style({
-        fill: new Fill({
-          color: 'rgba(52, 152, 219, 0.2)', // Blue fill with some transparency
-        }),
-        stroke: new Stroke({
-          color: '#3498db',
-          width: 2,
-        }),
-        text: new OLText({
-            font: '14px Calibri,sans-serif',
-            fill: new Fill({ color: '#000' }),
-            stroke: new Stroke({ color: '#fff', width: 3 }),
-            placement: 'point',
-            textBaseline: 'middle',
-            textAlign: 'center',
-            overflow: true,
-        }),
-      });
-
-      const vectorLayer = new VectorLayer({
-        source: vectorSource,
-        style: function(feature) {
-            const name = feature.get('Name');
-            if (name) {
-                assetStyle.getText().setText(name);
-            } else {
-                assetStyle.getText().setText('');
-            }
-            return assetStyle;
-        },
-        visible: true,
-        zIndex: 2, // Above WQ and RGB layers
-      });
-
-      mapInstance.addLayer(vectorLayer);
-      assetLayerRef.current = vectorLayer;
-    }
-  }, [mapInstance, assetFeatures, showFishCagesLayer]);
-
   // Toggle functions now update parent state
   const toggleWqLayer = () => setShowWqLayer(!showWqLayer);
   const toggleRgbLayer = () => setShowRgbLayer(!showRgbLayer);
@@ -205,33 +151,40 @@ function MapComponent({
   const toggleLegendVisibility = () => setIsLegendVisible(prev => !prev);
   const toggleControlsVisibility = () => setIsControlsOpen(prev => !prev);
 
-  const getLegendLabels = () => {
-    if (wqLegendMin === null || wqLegendMax === null || currentSelectedParamInfo === null) {
+  // Helper to calculate intermediate legend labels
+  const getIntermediateLabels = (min, max, count = 5) => {
+    if (min === null || max === null || typeof min !== 'number' || typeof max !== 'number' || min >= max) {
+      // Fallback to default -1 to 1 if dynamic values are invalid or not yet loaded
       return {
-        title: "No Data",
-        minLabel: "N/A",
-        midLabel: "N/A",
-        maxLabel: "N/A",
-        unit: ""
-      };
+      title: "No Data",
+      labels: ["-1.00", "-0.50", "0.00", "0.50", "1.00"],
+      unit: ""
+    };
     }
-
-    const mid = (wqLegendMin + wqLegendMax) / 2;
+    const labels = [];
+    const step = (max - min) / (count - 1);
+    for (let i = 0; i < count; i++) {
+      labels.push((min + i * step).toFixed(2));
+    }
     return {
-      title: `${currentSelectedParamInfo.label} (${currentSelectedParamInfo.unit})`,
-      minLabel: wqLegendMin.toFixed(2),
-      midLabel: mid.toFixed(2),
-      maxLabel: wqLegendMax.toFixed(2),
+      title: `${currentSelectedParamInfo.label}`,
+      labels: labels,
       unit: currentSelectedParamInfo.unit
     };
   };
 
-  const legendLabels = getLegendLabels();
+  const legendLabels = getIntermediateLabels(wqLegendMin, wqLegendMax, 5);
 
   return (
     <div className="map-container">
       {/* Removed the arbitrary isLoading overlay */}
       <div ref={mapRef} className="map"></div>
+
+      <AssetFeaturesLayer 
+        map={mapInstance} 
+        assetFeatures={assetFeatures} 
+        visible={showFishCagesLayer} 
+      />
 
       {/* Render legend only if it's set to be visible AND map data is not loading */}
       {isLegendVisible && !mapLoading && (
@@ -243,10 +196,10 @@ function MapComponent({
             </p>
           </div>
           <div className="legend-gradient" style={{ display: wqMapTileUrl ? 'block' : 'none' }}></div>
-          <div className="legend-labels" style={{ display: wqMapTileUrl ? 'flex' : 'none' }}>
-            <span>{legendLabels.minLabel}</span>
-            <span>{legendLabels.midLabel}</span>
-            <span>{legendLabels.maxLabel}</span>
+          <div className="legend-labels">
+            {legendLabels.labels.map((label, index) => (
+              <span key={index}>{label}</span>
+            ))}
           </div>
         </div>
       )}

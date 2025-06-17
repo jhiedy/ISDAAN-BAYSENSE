@@ -415,3 +415,68 @@
     z-index: 101;
   }
 }
+
+/* Enhanced Asset Features Tooltip */
+.asset-feature-tooltip {
+  position: absolute;
+  background-color: #ffffffcc;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+  font-size: 13px;
+  min-width: 220px;
+  max-width: 320px;
+  display: none;
+  z-index: 1000;
+  border: 1px solid rgba(0,0,0,0.1);
+  backdrop-filter: blur(2px);
+  transform: translateY(-10px);
+  transition: all 0.2s ease-out;
+  opacity: 0;
+}
+
+.asset-feature-tooltip[style*="display: block"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.asset-feature-tooltip h4 {
+  margin: 0 0 8px 0;
+  color: #3498db;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 6px;
+}
+
+.tooltip-row {
+  margin-bottom: 6px;
+  line-height: 1.5;
+  display: flex;
+}
+
+.tooltip-label {
+  color: #7f8c8d;
+  font-weight: 500;
+  min-width: 80px;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+/* Status badges */
+.status-valid {
+  color: #27ae60;
+  font-weight: 600;
+}
+.status-expired {
+  color: #e74c3c;
+  font-weight: 600;
+}
+.status-for-renewal {
+  color: #e67e22;
+  font-weight: 600;
+}
+.status-unknown {
+  color: #95a5a6;
+}

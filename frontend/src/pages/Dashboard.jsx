@@ -21,9 +21,9 @@ function Dashboard() {
     const [wqMapTileUrl, setWqMapTileUrl] = useState(null);
     const [wqLegendMin, setWqLegendMin] = useState(null);
     const [wqLegendMax, setWqLegendMax] = useState(null);
-    const [assetFeatures, setAssetFeatures] = useState(null); // Stores GeoJSON of FLAs
+    const [assetFeatures, setAssetFeatures] = useState(null); 
     const [availableDates, setAvailableDates] = useState([]);
-    const [mapLoading, setMapLoading] = useState(false); // Central loading for map tiles and features
+    const [mapLoading, setMapLoading] = useState(false);
     const [mapError, setMapError] = useState(null);
     const [mapInstance, setMapInstance] = useState(null);
 
