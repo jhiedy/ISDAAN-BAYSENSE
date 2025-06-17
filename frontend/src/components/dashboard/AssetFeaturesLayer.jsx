@@ -19,105 +19,71 @@ const formatDate = (dateString) => {
   }
 };
 
-function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips }) {
+function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips, onFeatureSelect, selectedAssetFeature }) {
   const layerRef = useRef(null);
   const tooltipRef = useRef(null);
   const tooltipOverlayRef = useRef(null);
   const hoveredFeatureRef = useRef(null);
-  const highlightLayerRef = useRef(null);
 
-  // Get style based on feature status
-  const getFeatureStyle = (feature, hover = false) => {
+  // This centralized style function handles all states: default, hover, and selected.
+  const styleFunction = (feature) => {
+    const isSelected = selectedAssetFeature && feature.get('Name') === selectedAssetFeature.Name;
+    const isHovered = hoveredFeatureRef.current && hoveredFeatureRef.current.getId() === feature.getId();
+
+    // Selected style takes highest priority
+    if (isSelected) {
+      return new Style({
+        fill: new Fill({ color: 'rgba(255, 255, 0, 0.5)' }),
+        stroke: new Stroke({ color: 'rgba(255, 215, 0, 1)', width: 4 }),
+        zIndex: 2,
+      });
+    }
+
+    // Get base colors from status for default and hover styles
     const status = feature.get('Status')?.toLowerCase() || '';
-    let fillColor = 'rgba(52, 152, 219, 0.2)'; // Default blue
-    let strokeColor = 'rgba(52, 152, 219)'; // Default blue
+    let fillColor = 'rgba(52, 152, 219, 0.2)';
+    let strokeColor = 'rgba(52, 152, 219)';
 
     if (status.includes('expired')) {
-      fillColor = 'rgba(231, 76, 60, 0.2)'; // Red
-      strokeColor = 'rgba(231, 76, 60)'; // Red
+      fillColor = 'rgba(231, 76, 60, 0.2)';
+      strokeColor = 'rgba(231, 76, 60)';
     } else if (status.includes('for renewal')) {
-      fillColor = 'rgba(230, 126, 34, 0.2)'; // Orange
-      strokeColor = 'rgba(230, 126, 34)'; // Orange
+      fillColor = 'rgba(230, 126, 34, 0.2)';
+      strokeColor = 'rgba(230, 126, 34)';
     }
 
+    // Hover style
+    if (isHovered) {
+      return new Style({
+        fill: new Fill({ color: fillColor.replace('0.2', '0.4') }),
+        stroke: new Stroke({ color: strokeColor, width: 4, lineDash: [] }),
+        zIndex: 1,
+      });
+    }
+
+    // Default style
     return new Style({
-      fill: new Fill({
-        color: hover ? fillColor.replace('0.2', '0.4') : fillColor,
-      }),
-      stroke: new Stroke({
-        color: strokeColor,
-        width: hover ? 4 : 2,
-        lineDash: hover ? [] : [5, 5],
-      }),
-      zIndex: hover ? 1 : 0,
+      fill: new Fill({ color: fillColor }),
+      stroke: new Stroke({ color: strokeColor, width: 2, lineDash: [5, 5] }),
+      zIndex: 0,
     });
   };
 
-  // Create a separate highlight layer for the hover effect
-  const createHighlightLayer = () => {
-    if (highlightLayerRef.current) {
-      map.removeLayer(highlightLayerRef.current);
-    }
-    
-    const highlightLayer = new VectorLayer({
-      source: new VectorSource(),
-      style: new Style({
-        fill: new Fill({
-          color: 'rgba(255, 255, 255, 0.3)',
-        }),
-        stroke: new Stroke({
-          color: 'rgba(0, 0, 0, 0.7)',
-          width: 4,
-        }),
-        zIndex: 10,
-      }),
-      zIndex: 100,
-    });
-    
-    map.addLayer(highlightLayer);
-    highlightLayerRef.current = highlightLayer;
-    return highlightLayer;
-  };
-
-  useEffect(() => {
-    if (!map) return;
-
-    // Create tooltip overlay with new positioning
-    const tooltipOverlay = new Overlay({
-      element: tooltipRef.current,
-      positioning: 'bottom-center',
-      offset: [0, -15],
-      stopEvent: false,
-    });
-    map.addOverlay(tooltipOverlay);
-    tooltipOverlayRef.current = tooltipOverlay;
-
-    // Create highlight layer
-    const highlightLayer = createHighlightLayer();
-
-    return () => {
-      map.removeOverlay(tooltipOverlay);
-      map.removeLayer(highlightLayer);
-    };
-  }, [map]);
-
+  // Effect to create and manage the layer
   useEffect(() => {
     if (!map || !assetFeatures) return;
 
     if (layerRef.current) {
       map.removeLayer(layerRef.current);
-      layerRef.current = null;
     }
 
     const vectorSource = new VectorSource({
-      features: new GeoJSON().readFeatures(assetFeatures, {
-        featureProjection: 'EPSG:3857',
-      }),
+      features: new GeoJSON().readFeatures(assetFeatures, { featureProjection: 'EPSG:3857' }),
     });
 
     const vectorLayer = new VectorLayer({
       source: vectorSource,
-      style: (feature) => getFeatureStyle(feature),
+      style: styleFunction,
       visible,
       zIndex: 2,
     });
@@ -125,47 +91,43 @@ function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips }) {
     map.addLayer(vectorLayer);
     layerRef.current = vectorLayer;
 
-    // Add pointermove event for hover effects
-    const pointerMoveHandler = (evt) => {
-      if (!visible) return;
-
-      const feature = map.forEachFeatureAtPixel(evt.pixel, (f) => f);
-      const element = tooltipRef.current;
-      const highlightLayer = highlightLayerRef.current;
-
-      if (feature !== hoveredFeatureRef.current) {
-        // Reset previous hovered feature style
-        if (hoveredFeatureRef.current) {
-          hoveredFeatureRef.current.setStyle(getFeatureStyle(hoveredFeatureRef.current));
-        }
-
-        // Clear highlight layer
-        if (highlightLayer) {
-          highlightLayer.getSource().clear();
-        }
-
-        // Set new hovered feature style
-        if (feature) {
-          feature.setStyle(getFeatureStyle(feature, true));
-          hoveredFeatureRef.current = feature;
-
-          // Add to highlight layer
-          if (highlightLayer) {
-            const highlightSource = highlightLayer.getSource();
-            highlightSource.clear();
-            highlightSource.addFeature(feature.clone());
-          }
-        } else {
-          hoveredFeatureRef.current = null;
-        }
+    // Cleanup on unmount
+    return () => {
+      if (map && layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
       }
+    };
+  }, [map, assetFeatures, visible, selectedAssetFeature]);
 
+  // Effect to redraw the layer when the selected feature changes
+  useEffect(() => {
+    if (layerRef.current) {
+      layerRef.current.getSource().changed();
+    }
+  }, [selectedAssetFeature]);
+
+  // Effect to set up and tear down event listeners
+  useEffect(() => {
+    if (!map) return;
+
+    const pointerMoveHandler = (evt) => {
+      if (!visible || !layerRef.current) return;
+      const feature = map.forEachFeatureAtPixel(evt.pixel, (f) => f, {
+        layerFilter: (l) => l === layerRef.current,
+      });
+
+      if ((feature ? feature.getId() : null) !== (hoveredFeatureRef.current ? hoveredFeatureRef.current.getId() : null)) {
+        hoveredFeatureRef.current = feature;
+        layerRef.current.getSource().changed(); // Force redraw to apply hover style
+      }
+      // Tooltip logic
+      const element = tooltipRef.current;
       if (feature && showTooltips) {
         const properties = feature.getProperties();
         const formattedDateApprv = formatDate(properties['Date Apprv']);
         const formattedDateExp = formatDate(properties['Date Exp']);
-
-        const tooltipContent = `
+        element.innerHTML = `
             <div class="asset-tooltip">
             <div class="tooltip-arrow"></div>
             <h4>${properties.Name || 'N/A'}</h4>
@@ -176,57 +138,49 @@ function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips }) {
             <div class="tooltip-row"><span class="tooltip-label">Status:</span> <span class="status-${properties.Status?.toLowerCase().replace(/\s+/g, '-') || 'unknown'}">${properties.Status || 'N/A'}</span></div>
             </div>
         `;
-        element.innerHTML = tooltipContent;
         tooltipOverlayRef.current.setPosition(evt.coordinate);
         element.style.display = 'block';
-        } else {
+      } else {
         element.style.display = 'none';
-        }
-    };
-
-    map.on('pointermove', pointerMoveHandler);
-
-    // Add click event for feature selection
-    const clickHandler = (evt) => {
-      if (!visible) return;
-      
-      const feature = map.forEachFeatureAtPixel(evt.pixel, (f) => f);
-      if (feature) {
-        // You can add custom click behavior here
-        console.log('Feature clicked:', feature.getProperties());
-        
-        // Flash animation on click
-        const originalStyle = feature.getStyle();
-        feature.setStyle(new Style({
-          fill: new Fill({
-            color: 'rgba(255, 255, 0, 0.5)',
-          }),
-          stroke: new Stroke({
-            color: 'rgba(255, 215, 0, 1)',
-            width: 4,
-          }),
-          zIndex: 100,
-        }));
-        
-        setTimeout(() => {
-          feature.setStyle(originalStyle);
-        }, 300);
       }
     };
 
+    const clickHandler = (evt) => {
+      if (!visible) return;
+      const feature = map.forEachFeatureAtPixel(evt.pixel, (f) => f, {
+        layerFilter: (layer) => layer === layerRef.current,
+        hitTolerance: 5,
+      });
+      if (onFeatureSelect) {
+        onFeatureSelect(feature);
+      }
+    };
+
+    map.on('pointermove', pointerMoveHandler);
     map.on('click', clickHandler);
 
     return () => {
       map.un('pointermove', pointerMoveHandler);
       map.un('click', clickHandler);
-      if (layerRef.current) {
-        map.removeLayer(layerRef.current);
-      }
-      if (highlightLayerRef.current) {
-        map.removeLayer(highlightLayerRef.current);
+    };
+  }, [map, visible, showTooltips, onFeatureSelect]);
+
+  // Effect to manage the tooltip overlay
+  useEffect(() => {
+    if (!map) return;
+    tooltipOverlayRef.current = new Overlay({
+      element: tooltipRef.current,
+      positioning: 'bottom-center',
+      offset: [0, -15],
+      stopEvent: false,
+    });
+    map.addOverlay(tooltipOverlayRef.current);
+    return () => {
+      if (map && tooltipOverlayRef.current) {
+        map.removeOverlay(tooltipOverlayRef.current);
       }
     };
-  }, [map, assetFeatures, visible, showTooltips]);
+  }, [map]);
 
   return (
     <div ref={tooltipRef} className="asset-feature-tooltip"></div>

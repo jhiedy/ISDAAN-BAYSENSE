@@ -26,11 +26,12 @@ function Dashboard() {
     const [mapLoading, setMapLoading] = useState(false);
     const [mapError, setMapError] = useState(null);
     const [mapInstance, setMapInstance] = useState(null);
+    const [selectedAssetFeature, setSelectedAssetFeature] = useState(null);
 
     // Responsive State
     const theme = useMantineTheme();
     const [mobileNavOpened, { toggle: toggleMobileNav }] = useDisclosure(false);
-    const [isRightSidebarVisible, { toggle: toggleRightSidebar }] = useDisclosure(false);
+    const [isRightSidebarVisible, { toggle: toggleRightSidebar, open: openRightSidebar, close: closeRightSidebar }] = useDisclosure(false);
     const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
 
     // Map Layer visibility states
@@ -46,6 +47,34 @@ function Dashboard() {
       tss: { label: "Suspended Sediments", unit: "mg/L" },
     };
     const currentSelectedParamInfo = parameterInfo[selectedParameter];
+
+    const handleFeatureSelect = (feature) => {
+        if (!feature) {
+            return;
+        }
+
+        const properties = feature.getProperties();
+        const isSameFeature = selectedAssetFeature && selectedAssetFeature.Name === properties.Name;
+
+        if (isSameFeature) {
+            setSelectedAssetFeature(null);
+            if (isRightSidebarVisible) {
+                closeRightSidebar();
+            }
+        } else {
+            setSelectedAssetFeature(properties);
+            if (!isRightSidebarVisible) {
+                openRightSidebar();
+            }
+        }
+    };
+
+    const handleRightSidebarToggle = () => {
+        if (isRightSidebarVisible) {
+            setSelectedAssetFeature(null);
+        }
+        toggleRightSidebar();
+    };
 
     // Effect to load Asset Features (FLA polygons) only once on component mount
     useEffect(() => {
@@ -279,10 +308,12 @@ function Dashboard() {
                         setIsLegendVisible={setIsLegendVisible}
                         onMapInstanceReady={setMapInstance}
                         mapLoading={mapLoading}
+                        onFeatureSelect={handleFeatureSelect}
+                        selectedAssetFeature={selectedAssetFeature}
                     />
                     {!isMobile && (
                         <RightSidebarToggleButton
-                            onClick={toggleRightSidebar}
+                            onClick={handleRightSidebarToggle}
                             isSidebarOpen={isRightSidebarVisible}
                         />
                     )}
@@ -296,6 +327,7 @@ function Dashboard() {
                         endDate={endDate}
                         selectedParameter={selectedParameter}
                         cloudCover={cloudCover}
+                        selectedAssetFeature={selectedAssetFeature}
                     />
                 </AppShell.Aside>
             </AppShell>

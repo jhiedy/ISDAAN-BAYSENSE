@@ -34,6 +34,8 @@ function MapComponent({
   mapLoading,
   centerCoordinates = [122.104577, 13.763949],
   zoomLevel = 12.7,
+  onFeatureSelect,
+  selectedAssetFeature
 }) {
   const mapRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
@@ -185,6 +187,8 @@ function MapComponent({
         assetFeatures={assetFeatures}
         visible={showFishCagesLayer}
         showTooltips={showTooltips}
+        onFeatureSelect={onFeatureSelect}
+        selectedAssetFeature={selectedAssetFeature}
       />
 
       {/* Render legend only if it's set to be visible AND map data is not loading */}

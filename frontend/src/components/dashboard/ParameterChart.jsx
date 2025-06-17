@@ -127,7 +127,8 @@ function ParameterChart({
               <Line
                 type="monotone"
                 dataKey="value"
-                name={selectedParam.label} // Name for Legend/Tooltip
+                // name={selectedParam.label} // Name for Legend/Tooltip
+                name="Dummy Data" // Name for Legend/Tooltip
                 stroke="#3498db"
                 strokeWidth={2}
                 dot={{ r: 2, strokeWidth: 1, fill: '#3498db' }} // Smaller dots
