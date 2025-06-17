@@ -50,16 +50,21 @@ function RightSidebar({
         try {
           setIsLoading(true);
           setError(null);
-          const values = await fetchParameterValues(
-            selectedParameter,
-            startDate,
-            endDate,
-            cloudCover
-          );
-          setChartData(values);
-          setProcessedData(processParameterData(values, selectedParam));
+          
+          // Commented out the actual API call
+          // const values = await fetchParameterValues(
+          //   selectedParameter,
+          //   startDate,
+          //   endDate,
+          //   cloudCover
+          // );
+          
+          // Generate dummy data instead
+          const dummyData = generateDummyData(startDate, endDate, selectedParameter);
+          setChartData(dummyData);
+          setProcessedData(processParameterData(dummyData, selectedParam));
         } catch (err) {
-          console.error("Error fetching parameter values:", err);
+          console.error("Error with parameter values:", err);
           setError(err.message || "Failed to load parameter data");
           setProcessedData({ chartData: [], stats: {} });
         } finally {
@@ -75,6 +80,42 @@ function RightSidebar({
 
     loadParameterValues();
   }, [startDate, endDate, selectedParameter, cloudCover]);
+
+  // Function to generate dummy data
+  const generateDummyData = (startDate, endDate, parameter) => {
+    const data = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) || 30; // Default to 30 days if dates are invalid
+    
+    // Base values for different parameters
+    const baseValues = {
+      "chlorophyll": { min: 0.5, max: 12, variation: 3 },
+      "turbidity": { min: 1, max: 50, variation: 10 },
+      "tss": { min: 5, max: 100, variation: 20 }
+    };
+    
+    const params = baseValues[parameter] || { min: 0, max: 10, variation: 2 };
+    
+    for (let i = 0; i < days; i++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+      
+      // Format date as YYYY-MM-DD
+      const dateStr = date.toISOString().split('T')[0];
+      
+      // Generate random value within range with some variation
+      const baseValue = params.min + (Math.random() * (params.max - params.min));
+      const value = baseValue + (Math.random() * params.variation - params.variation/2);
+      
+      data.push({
+        date: dateStr,
+        value: parseFloat(value.toFixed(3))
+      });
+    }
+    
+    return data;
+  };
 
   return (
     <Stack spacing="lg" p="md" h="100%" style={{ overflowY: 'auto' }}>
