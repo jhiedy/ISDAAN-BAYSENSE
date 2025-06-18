@@ -5,6 +5,7 @@ import LeftSidebar from "../components/dashboard/LeftSidebar";
 import MapComponent from "../components/dashboard/Map";
 import RightSidebar from "../components/dashboard/RightSidebar";
 import RightSidebarToggleButton from "../components/dashboard/RightSidebarToggle";
+import GeoJSON from 'ol/format/GeoJSON';
 import axios from 'axios';
 
 function Dashboard() {
@@ -53,8 +54,14 @@ function Dashboard() {
             return;
         }
 
-        const properties = feature.getProperties();
-        const isSameFeature = selectedAssetFeature && selectedAssetFeature.Name === properties.Name;
+        // Convert the OpenLayers feature to a standard GeoJSON feature object
+        const featureObject = new GeoJSON().writeFeatureObject(feature, {
+            featureProjection: 'EPSG:3857',
+            dataProjection: 'EPSG:4326'
+        });
+
+        // Check if the same feature is being clicked again to deselect it
+        const isSameFeature = selectedAssetFeature && selectedAssetFeature.properties.Name === featureObject.properties.Name;
 
         if (isSameFeature) {
             setSelectedAssetFeature(null);
@@ -62,7 +69,7 @@ function Dashboard() {
                 closeRightSidebar();
             }
         } else {
-            setSelectedAssetFeature(properties);
+            setSelectedAssetFeature(featureObject); // Store the complete GeoJSON object
             if (!isRightSidebarVisible) {
                 openRightSidebar();
             }
@@ -265,13 +272,13 @@ function Dashboard() {
                             radius="md"
                             size="xs"
                         >
-                            <Text fw={700} ta="center" size="lg" mb="sm">
+                            <Text fw={700} ta="center" size="lg" mb={30}>
                                 Fetching Map Data...
                             </Text>
-                            <Text ta="center" c="dimmed">
+                            <Text size="sm" ta="center" c="dimmed">
                                 Please wait while we load the latest satellite imagery.
                             </Text>
-                            <LoadingOverlay visible={true} overlayProps={{ radius: "sm", blur: 0 }} loaderProps={{ size: "sm", color: "blue" }} />
+                            <LoadingOverlay visible={true} overlayProps={{ radius: "xs", blur: 0 }} loaderProps={{ size: "xs", color: "blue" }} />
                         </Modal>
                     )}
                     {mapError && (

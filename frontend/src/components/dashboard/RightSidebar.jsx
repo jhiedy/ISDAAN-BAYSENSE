@@ -11,8 +11,9 @@ import {
   ThemeIcon,
   Box,
   SimpleGrid,
+  LoadingOverlay,
 } from '@mantine/core';
-import { MapPin, Calendar, LandPlot, Info } from 'lucide-react';
+import { MapPin, Calendar, LandPlot, Info, Droplets, Thermometer, Wind, Gauge } from 'lucide-react';
 import ParameterChart from "./ParameterChart";
 import ChartModal from "./ChartModal";
 import {
@@ -25,7 +26,6 @@ const FeatureDetails = ({ feature }) => {
         try {
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return 'Invalid Date';
-            // Using a shorter date format for compactness
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             return date.toLocaleDateString('en-US', options);
         } catch (error) {
@@ -84,6 +84,63 @@ const FeatureDetails = ({ feature }) => {
     );
 };
 
+const WeatherDisplay = ({ weatherData, isLoading }) => {
+    if (isLoading) {
+        return (
+            <Box style={{ position: 'relative', height: 100 }} m={-10}>
+                <Text ta='center' size='xs' mb={-30}>Fetching Weather Data</Text>
+                <LoadingOverlay visible={true} overlayProps={{ radius: "xs", blur: 0 }} loaderProps={{ size: "xs", color: "blue" }} m={0}/>
+            </Box>
+        );
+    }
+
+    if (!weatherData) {
+        return (
+            <Stack justify="center" align='center' gap={0}>
+                <Text size='xs' c="dimmed" fs="italic">
+                    Weather data not available
+                </Text>
+            </Stack>
+        );
+    }
+
+    // Get the most recent forecast entry
+    const currentWeather = weatherData.forecast[0];
+
+    return (
+        <SimpleGrid cols={2} spacing="md" verticalSpacing="sm">
+            <Group wrap="nowrap" gap="xs">
+                <ThemeIcon variant="light" size="md" radius="md"><Thermometer size={14} /></ThemeIcon>
+                <Box>
+                    <Text size="xs" c="dimmed">Temperature</Text>
+                    <Text size="xs" fw={500}>{currentWeather.temperature} °C</Text>
+                </Box>
+            </Group>
+            <Group wrap="nowrap" gap="xs">
+                <ThemeIcon variant="light" size="md" radius="md"><Droplets size={14} /></ThemeIcon>
+                <Box>
+                    <Text size="xs" c="dimmed">Humidity</Text>
+                    <Text size="xs" fw={500}>{currentWeather.humidity}%</Text>
+                </Box>
+            </Group>
+            <Group wrap="nowrap" gap="xs">
+                <ThemeIcon variant="light" size="md" radius="md"><Droplets size={14} /></ThemeIcon>
+                <Box>
+                    <Text size="xs" c="dimmed">Rainfall (3h)</Text>
+                    <Text size="xs" fw={500}>{currentWeather.rainfall} mm</Text>
+                </Box>
+            </Group>
+            <Group wrap="nowrap" gap="xs">
+                <ThemeIcon variant="light" size="md" radius="md"><Wind size={14} /></ThemeIcon>
+                <Box>
+                    <Text size="xs" c="dimmed">Wind Gust</Text>
+                    <Text size="xs" fw={500}>{currentWeather.gust_speed} m/s</Text>
+                </Box>
+            </Group>
+        </SimpleGrid>
+    );
+};
+
 function RightSidebar({
   startDate,
   endDate,
@@ -95,6 +152,8 @@ function RightSidebar({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+  const [weatherData, setWeatherData] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
 
   const parameters = {
     "water-quality": [
@@ -111,6 +170,58 @@ function RightSidebar({
     }
     return { label: "Unknown", unit: "" };
   }, [selectedParameter]);
+
+  // Function to calculate midpoint of GeoJSON polygon
+  const calculateMidpoint = (feature) => {
+    if (!feature || !feature.geometry || feature.geometry.type !== 'Polygon') {
+      return null;
+    }
+
+    const coordinates = feature.geometry.coordinates[0]; // First ring of polygon
+    let sumLat = 0;
+    let sumLng = 0;
+    let count = 0;
+
+    for (const coord of coordinates) {
+      sumLng += coord[0];
+      sumLat += coord[1];
+      count++;
+    }
+
+    return count > 0 ? [sumLng / count, sumLat / count] : null;
+  };
+
+  // Fetch weather data when selected asset changes
+  useEffect(() => {
+    const fetchWeatherData = async () => {
+      if (!selectedAssetFeature) {
+        setWeatherData(null);
+        return;
+      }
+
+      const midpoint = calculateMidpoint(selectedAssetFeature);
+      if (!midpoint) {
+        setWeatherData(null);
+        return;
+      }
+
+      try {
+        setWeatherLoading(true);
+        const [lon, lat] = midpoint;
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/get_weather?lat=${lat}&lon=${lon}`);
+        if (!response.ok) throw new Error('Failed to fetch weather data');
+        const data = await response.json();
+        setWeatherData(data);
+      } catch (err) {
+        console.error('Error fetching weather data:', err);
+        setWeatherData(null);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    fetchWeatherData();
+  }, [selectedAssetFeature]);
 
   useEffect(() => {
     const loadParameterValues = async () => {
@@ -171,7 +282,7 @@ function RightSidebar({
       <Paper p="md" radius="md" withBorder style={{ flexShrink: 0 }}>
           <Stack gap="md">
               {selectedAssetFeature ? (
-                  <FeatureDetails feature={selectedAssetFeature} />
+                  <FeatureDetails feature={selectedAssetFeature.properties} />
               ) : (
                   <Stack align="center" gap="xs" p="xs">
                       <ThemeIcon variant="light" radius="xl" size="lg">
@@ -186,10 +297,8 @@ function RightSidebar({
               
               <Divider />
 
-              <Stack justify="center" align='center' gap={0}>
-                  <Text size='xs' c="dimmed" fs="italic">
-                      -- Weather section: Work in progress --
-                  </Text>
+              <Stack gap="xs">
+                  <WeatherDisplay weatherData={weatherData} isLoading={weatherLoading} />
               </Stack>
           </Stack>
       </Paper>
