@@ -5,20 +5,6 @@ import GeoJSON from "ol/format/GeoJSON";
 import { Style, Fill, Stroke } from 'ol/style';
 import Overlay from 'ol/Overlay';
 
-// Helper function to format dates
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Invalid Date';
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  } catch (error) {
-    console.error("Error formatting date:", dateString, error);
-    return 'N/A';
-  }
-};
-
 function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips, onFeatureSelect, selectedAssetFeature }) {
   const layerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -125,16 +111,14 @@ function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips, onFeatu
       const element = tooltipRef.current;
       if (feature && showTooltips) {
         const properties = feature.getProperties();
-        const formattedDateApprv = formatDate(properties['Date Apprv']);
-        const formattedDateExp = formatDate(properties['Date Exp']);
         element.innerHTML = `
             <div class="asset-tooltip">
             <div class="tooltip-arrow"></div>
             <h4>${properties.Name || 'N/A'}</h4>
             <div class="tooltip-row"><span class="tooltip-label">Location:</span> ${properties.Barangay || 'N/A'}, ${properties.Mun_Name || 'N/A'}, ${properties.Province || 'N/A'}</div>
             <div class="tooltip-row"><span class="tooltip-label">Area:</span> ${properties.Area ? `${properties.Area} ha` : 'N/A'}</div>
-            <div class="tooltip-row"><span class="tooltip-label">Approved:</span> ${formattedDateApprv}</div>
-            <div class="tooltip-row"><span class="tooltip-label">Expires:</span> ${formattedDateExp}</div>
+            <div class="tooltip-row"><span class="tooltip-label">Approved:</span> ${properties["DATE APPRO"]}</div>
+            <div class="tooltip-row"><span class="tooltip-label">Expires:</span> ${properties["EXPIRATION"]}</div>
             <div class="tooltip-row"><span class="tooltip-label">Status:</span> <span class="status-${properties.Status?.toLowerCase().replace(/\s+/g, '-') || 'unknown'}">${properties.Status || 'N/A'}</span></div>
             </div>
         `;

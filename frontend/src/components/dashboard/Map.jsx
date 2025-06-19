@@ -32,8 +32,8 @@ function MapComponent({
   isLegendVisible, setIsLegendVisible,
   onMapInstanceReady,
   mapLoading,
-  centerCoordinates = [122.104577, 13.763949],
-  zoomLevel = 12.7,
+  centerCoordinates = [121.64355545857632,13.81529622721097],
+  zoomLevel = 9.7,
   onFeatureSelect,
   selectedAssetFeature
 }) {

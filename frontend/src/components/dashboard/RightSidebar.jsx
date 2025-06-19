@@ -19,20 +19,11 @@ import ChartModal from "./ChartModal";
 import {
   processParameterData,
 } from "../../utils/analysis";
+import {
+  calculateMidpoint
+} from "../../utils/map-utils"
 
 const FeatureDetails = ({ feature }) => {
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid Date';
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            return date.toLocaleDateString('en-US', options);
-        } catch (error) {
-            return 'N/A';
-        }
-    };
-
     const status = feature.Status?.toLowerCase() || 'unknown';
     let statusColor = 'gray';
     if (status.includes('expired')) statusColor = 'red';
@@ -69,14 +60,14 @@ const FeatureDetails = ({ feature }) => {
                     <ThemeIcon variant="light" size="md" radius="md"><Calendar size={14} /></ThemeIcon>
                     <Box>
                         <Text size="xs" c="dimmed">Approved</Text>
-                        <Text size="xs" fw={500}>{formatDate(feature['Date Apprv'])}</Text>
+                        <Text size="xs" fw={500}>{feature["DATE APPRO"]}</Text>
                     </Box>
                 </Group>
                 <Group wrap="nowrap" gap="xs">
                     <ThemeIcon variant="light" size="md" radius="md"><Calendar size={14} /></ThemeIcon>
                     <Box>
                         <Text size="xs" c="dimmed">Expiring</Text>
-                        <Text size="xs" fw={500}>{formatDate(feature['Date Exp'])}</Text>
+                        <Text size="xs" fw={500}>{feature["EXPIRATION"]}</Text>
                     </Box>
                 </Group>
             </SimpleGrid>
@@ -170,26 +161,6 @@ function RightSidebar({
     }
     return { label: "Unknown", unit: "" };
   }, [selectedParameter]);
-
-  // Function to calculate midpoint of GeoJSON polygon
-  const calculateMidpoint = (feature) => {
-    if (!feature || !feature.geometry || feature.geometry.type !== 'Polygon') {
-      return null;
-    }
-
-    const coordinates = feature.geometry.coordinates[0]; // First ring of polygon
-    let sumLat = 0;
-    let sumLng = 0;
-    let count = 0;
-
-    for (const coord of coordinates) {
-      sumLng += coord[0];
-      sumLat += coord[1];
-      count++;
-    }
-
-    return count > 0 ? [sumLng / count, sumLat / count] : null;
-  };
 
   // Fetch weather data when selected asset changes
   useEffect(() => {

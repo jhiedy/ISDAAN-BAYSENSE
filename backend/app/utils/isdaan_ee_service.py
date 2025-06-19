@@ -349,19 +349,31 @@ def get_specific_date_rgb_tiles_for_asset(date: str, asset_id: str, cloud_cover:
     return tile_url
 
 @ensure_ee_initialized
-def create_geometry_from_coordinates(coordinates_list):
+def create_geometry_from_coordinates(coordinates_json: str):
     """
-    Creates an ee.Geometry from a list of polygon coordinates.
-    Each polygon is defined by a list of coordinate points.
+    Creates an ee.Geometry from a JSON string of polygon coordinates.
+    The JSON should have a "polygons" key containing a list of polygons,
+    where each polygon is a list of coordinate points.
     """
-    polygons = []
-    for coords in coordinates_list:
-        # Convert coordinates to ee.Geometry.Polygon
-        polygon = ee.Geometry.Polygon(coords)
-        polygons.append(polygon)
-    
-    # Combine all polygons into a single geometry
-    return ee.Geometry.MultiPolygon([poly.coordinates() for poly in polygons])
+    try:
+        coordinates_data = json.loads(coordinates_json)
+        polygons = coordinates_data.get('polygons', [])
+        
+        # Convert coordinates to ee.Geometry.Polygon objects
+        ee_polygons = []
+        for polygon_coords in polygons:
+            # Each polygon is a list of coordinates (and may be nested in an extra list)
+            if polygon_coords and isinstance(polygon_coords[0], list):
+                # Handle case where coordinates might be nested
+                flat_coords = polygon_coords[0] if len(polygon_coords) == 1 else polygon_coords
+                ee_polygon = ee.Geometry.Polygon(flat_coords)
+                ee_polygons.append(ee_polygon)
+        
+        # Combine all polygons into a single geometry
+        return ee.Geometry.MultiPolygon([poly.coordinates() for poly in ee_polygons])
+    except Exception as e:
+        logging.error(f"Error creating geometry from coordinates: {e}")
+        raise
 
 @ensure_ee_initialized
 def get_composite_rgb_tiles_for_polygons(start_date: str, end_date: str, coordinates_list: list, cloud_cover: int = 20) -> str:
