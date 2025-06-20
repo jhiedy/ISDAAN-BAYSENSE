@@ -5,86 +5,75 @@ import {
 } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { AppShell } from "@mantine/core";
+import { Spotlight } from '@mantine/spotlight';
+import { Search } from 'lucide-react';
 import Dashboard from "./pages/Dashboard";
 import Header from "./components/Header";
 import axios from 'axios';
 
 function App() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [assetFeatures, setAssetFeatures] = useState(null);
+  const [actions, setActions] = useState([]);
   const [selectedFeatureFromSearch, setSelectedFeatureFromSearch] = useState(null);
+
+  const clearSelectedFeature = () => {
+    setSelectedFeatureFromSearch(null);
+  };
 
   useEffect(() => {
     const fetchAssetFeatures = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get_asset_features`);
-        setAssetFeatures(response.data);
+        const features = response.data.features;
+        const spotlightActions = features.map((feature, index) => ({
+          id: `${feature.properties.Name}-${feature.properties.Barangay}-${index}`,
+          label: feature.properties.Name,
+          description: `${feature.properties.Barangay}, ${feature.properties.Mun_Name}, ${feature.properties.Province}`,
+          onClick: () => {
+            setSelectedFeatureFromSearch(feature);
+          },
+        }));
+        setActions(spotlightActions);
       } catch (err) {
-        console.error("Error fetching asset features:", err);
+        console.error("Error fetching asset features for spotlight:", err);
       }
     };
     fetchAssetFeatures();
   }, []);
 
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-    if (term.trim() === "") {
-      setSearchResults([]);
-      return;
-    }
-    if (assetFeatures) {
-      const lowerCaseTerm = term.toLowerCase();
-      const results = assetFeatures.features.filter(feature => {
-        const { Name, Mun_Name, Province, Barangay } = feature.properties;
-        return (
-          Name?.toLowerCase().includes(lowerCaseTerm) ||
-          Mun_Name?.toLowerCase().includes(lowerCaseTerm) ||
-          Province?.toLowerCase().includes(lowerCaseTerm) ||
-          Barangay?.toLowerCase().includes(lowerCaseTerm)
-        );
-      });
-      setSearchResults(results);
-    }
-  };
-
-  const handleSearchResultClick = (feature) => {
-    setSelectedFeatureFromSearch(feature);
-    setSearchTerm("");
-    setSearchResults([]);
-  };
-
-  const clearSelectedFeature = () => {
-    setSelectedFeatureFromSearch(null);
-  }
-
   return (
-    <Router>
-      <AppShell header={{ height: 70 }} padding={0}>
-        <AppShell.Header>
-          <Header
-            searchTerm={searchTerm}
-            onSearchChange={handleSearch}
-            searchResults={searchResults}
-            onResultClick={handleSearchResultClick}
-          />
-        </AppShell.Header>
+      <Router>
+        <Spotlight
+          actions={actions}
+          shortcut={['mod + K', 'mod + P', '/']}
+          nothingFound="Nothing found..."
+          scrollable
+          maxHeight={350}
+          searchProps={{
+            // leftSection: <Search size={12} stroke={1.5} />,
+            placeholder: 'Search for an FLA...',
+          }}
+          highlightQuery
+        />
+        <AppShell header={{ height: 70 }} padding={0}>
+          <AppShell.Header>
+            <Header />
+          </AppShell.Header>
 
-        <AppShell.Main style={{ padding: 0, backgroundColor: "#F7F9F9" }}>
-          <Routes>
-             <Route
-              path="/dashboard"
-              element={
-                  <Dashboard
-                    selectedFeatureFromSearch={selectedFeatureFromSearch}
-                    clearSelectedFeature={clearSelectedFeature}
-                  />
-              }
-            />
-          </Routes>
-        </AppShell.Main>
-      </AppShell>
-    </Router>
+          <AppShell.Main style={{ padding: 0, backgroundColor: "#F7F9F9" }}>
+            <Routes>
+               <Route
+                path="/dashboard"
+                element={
+                    <Dashboard
+                      selectedFeatureFromSearch={selectedFeatureFromSearch}
+                      clearSelectedFeature={clearSelectedFeature}
+                    />
+                }
+              />
+            </Routes>
+          </AppShell.Main>
+        </AppShell>
+      </Router>
   );
 }
 

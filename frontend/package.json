@@ -15,6 +15,7 @@
     "@mantine/dates": "^7.17.2",
     "@mantine/hooks": "^7.17.2",
     "@mantine/notifications": "^7.17.2",
+    "@mantine/spotlight": "^7.17.2",
     "axios": "^1.8.3",
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
