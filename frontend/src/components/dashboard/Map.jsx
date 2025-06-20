@@ -10,10 +10,6 @@ import Map from "ol/Map";
 import Zoom from 'ol/control/Zoom';
 import Rotate from 'ol/control/Rotate';
 import Attribution from 'ol/control/Attribution';
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import GeoJSON from "ol/format/GeoJSON";
-import { Style, Fill, Stroke, Text as OLText } from 'ol/style';
 import "./Map.css";
 import MapControls from "./MapControls";
 import AssetFeaturesLayer from "./AssetFeaturesLayer";
@@ -46,49 +42,60 @@ function MapComponent({
   const rgbLayerRef = useRef(null);
 
   useEffect(() => {
-  if (!mapRef.current || mapInstance) return;
-  const center = fromLonLat(centerCoordinates);
+    if (!mapRef.current || mapInstance) return;
+    const center = fromLonLat(centerCoordinates);
 
-  const baseMapLayer = new TileLayer({
-    source: new StadiaMaps({
-      layer: 'alidade_smooth',
-      retina: true,
-      attributions: [
-        '<a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a>',
-        '<a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a>',
-        '<a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
-      ]
-    }),
-    visible: true,
-  });
+    const baseMapLayer = new TileLayer({
+      source: new StadiaMaps({
+        layer: 'alidade_smooth',
+        retina: true,
+        attributions: [
+          '<a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a>',
+          '<a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a>',
+          '<a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+        ]
+      }),
+      visible: true,
+    });
 
-  const map = new Map({
-    target: mapRef.current,
-    layers: [baseMapLayer],
-    view: new View({ center: center, zoom: zoomLevel }),
-    controls: []
-  });
+    const map = new Map({
+      target: mapRef.current,
+      layers: [baseMapLayer],
+      view: new View({ center: center, zoom: zoomLevel }),
+      controls: []
+    });
 
-  // Add custom controls (including attribution)
-  map.addControl(new Zoom());
-  map.addControl(new Rotate());
-  map.addControl(new Attribution({
-    collapsible: true,
-    collapsed: true,
-    tipLabel: 'Attribution'
-  }));
+    // Add custom controls (including attribution)
+    map.addControl(new Zoom());
+    map.addControl(new Rotate());
+    map.addControl(new Attribution({
+      collapsible: true,
+      collapsed: true,
+      tipLabel: 'Attribution'
+    }));
 
-  setMapInstance(map);
-  if (onMapInstanceReady) {
-    onMapInstanceReady(map);
-  }
-
-  return () => {
-    if (map) {
-      map.setTarget(undefined);
+    setMapInstance(map);
+    if (onMapInstanceReady) {
+      onMapInstanceReady(map);
     }
-  };
-}, []);
+
+    return () => {
+      if (map) {
+        map.setTarget(undefined);
+      }
+    };
+  }, []);
+
+  // Update map view dynamically
+  useEffect(() => {
+    if (!mapInstance) return;
+    const view = mapInstance.getView();
+    view.animate({
+      center: fromLonLat(centerCoordinates),
+      zoom: zoomLevel,
+      duration: 1000 // Animate for 1 second
+    });
+  }, [mapInstance, centerCoordinates, zoomLevel]);
 
   // Update map size on container resize
   useEffect(() => {

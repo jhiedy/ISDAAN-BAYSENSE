@@ -1,0 +1,29 @@
+.header-search-container {
+  position: relative;
+  width: 40%;
+  min-width: 300px;
+}
+
+.header-search-results {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  right: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1005; /* Make sure it's above other content */
+}
+
+.header-search-result-item {
+  cursor: pointer;
+  padding: 10px 15px;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.header-search-result-item:last-child {
+  border-bottom: none;
+}
+
+.header-search-result-item:hover {
+  background-color: #f8f9fa;
+}

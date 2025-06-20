@@ -1,0 +1,29 @@
+.search-overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  max-width: 600px;
+  z-index: 101;
+}
+
+.search-results-container {
+  margin-top: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background-color: #f0f0f0;
+}

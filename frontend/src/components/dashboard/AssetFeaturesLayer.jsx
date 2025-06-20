@@ -13,7 +13,7 @@ function AssetFeaturesLayer({ map, assetFeatures, visible, showTooltips, onFeatu
 
   // This centralized style function handles all states: default, hover, and selected.
   const styleFunction = (feature) => {
-    const isSelected = selectedAssetFeature && feature.get('Name') === selectedAssetFeature.properties.Name;
+    const isSelected = selectedAssetFeature && feature.get('FLA Number') === selectedAssetFeature.properties["FLA Number"];
     const isHovered = hoveredFeatureRef.current && hoveredFeatureRef.current.getId() === feature.getId();
 
     // Selected style takes highest priority

@@ -8,21 +8,20 @@ import {
   Avatar,
   Button,
   useMantineTheme,
+  Input,
+  Paper,
+  List,
 } from "@mantine/core";
-// Import necessary icons
-import { ChevronDown, HelpCircle } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { ChevronDown, HelpCircle, Search } from "lucide-react";
 import HelpGuideModal from "../components/dashboard/HelpGuideModal";
+import './Header.css';
 
-function Header() {
+function Header({ searchTerm, onSearchChange, searchResults, onResultClick }) {
   const [menuOpened, setMenuOpened] = useState(false);
-  // const navigate = useNavigate();
-  // const location = useLocation(); 
   const theme = useMantineTheme();
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const toggleHelpModal = () => setIsHelpModalOpen(prev => !prev);
 
-  // const displayName = userData ? (userData.name || userData.username || "User") : "User";
   const displayName = "User";
   const userInitial = displayName ? displayName[0].toUpperCase() : "?";
 
@@ -33,11 +32,11 @@ function Header() {
   return (
     <>
        <Group
-        justify="space-between" 
+        justify="space-between"
         h="100%"
         px="xl"
-        style={{ backgroundColor: "#3498db" }}
-        wrap="nowrap" 
+        style={{ backgroundColor: "#3498db", position: 'relative' }}
+        wrap="nowrap"
       >
         <Group
             style={{ flexShrink: 1, overflow: 'hidden' }}
@@ -68,24 +67,41 @@ function Header() {
               Help Guide
             </Button>
         </Group>
+
+        <Box className="header-search-container">
+            <Input
+              icon={<Search size={16} />}
+              placeholder="Search for an FLA..."
+              value={searchTerm}
+              onChange={(event) => onSearchChange(event.currentTarget.value)}
+              radius="xl"
+              style={{ width: '100%' }}
+            />
+            {searchResults.length > 0 && (
+            <Paper shadow="md" withBorder className="header-search-results">
+              <List>
+                {searchResults.map((result) => (
+                  <List.Item
+                    key={result.properties['FLA Number']}
+                    onClick={() => onResultClick(result)}
+                    className="header-search-result-item"
+                  >
+                    <Text size="sm">{result.properties.Name}</Text>
+                    <Text size="xs" color="dimmed">
+                      {result.properties.Barangay}, {result.properties.Mun_Name}
+                    </Text>
+                  </List.Item>
+                ))}
+              </List>
+            </Paper>
+          )}
+        </Box>
+
         <Group
             gap="lg"
             wrap="nowrap"
             style={{ flexShrink: 0 }} 
         >
-            {/* Admin Badge */}
-            {/* {isAdmin && (
-                 <Badge
-                    color="red"
-                    size="lg"
-                    variant="filled"
-                    radius="sm"
-                    style={{ marginBottom: "10px" }}
-                 >
-                    ADMIN
-                 </Badge>
-            )} */}
-
             <Menu
                 width={200}
                 position="bottom-end"

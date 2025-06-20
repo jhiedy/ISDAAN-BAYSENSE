@@ -7,8 +7,9 @@ import RightSidebar from "../components/dashboard/RightSidebar";
 import RightSidebarToggleButton from "../components/dashboard/RightSidebarToggle";
 import GeoJSON from 'ol/format/GeoJSON';
 import axios from 'axios';
+import { calculateMidpoint } from '../utils/map-utils';
 
-function Dashboard() {
+function Dashboard({ selectedFeatureFromSearch, clearSelectedFeature }) {
     // State for dashboard parameters
     const [startDate, setStartDate] = useState(new Date(2025, 0, 1));
     const [endDate, setEndDate] = useState(new Date());
@@ -28,6 +29,8 @@ function Dashboard() {
     const [mapError, setMapError] = useState(null);
     const [mapInstance, setMapInstance] = useState(null);
     const [selectedAssetFeature, setSelectedAssetFeature] = useState(null);
+    const [mapCenter, setMapCenter] = useState([121.64355545857632, 13.81529622721097]);
+    const [mapZoom, setMapZoom] = useState(9.7);
 
     // Responsive State
     const theme = useMantineTheme();
@@ -49,27 +52,44 @@ function Dashboard() {
     };
     const currentSelectedParamInfo = parameterInfo[selectedParameter];
 
+    useEffect(() => {
+        if (selectedFeatureFromSearch) {
+            const olFeature = new GeoJSON().readFeature(selectedFeatureFromSearch, {
+                dataProjection: 'EPSG:4326',
+                featureProjection: 'EPSG:3857'
+            });
+            handleFeatureSelect(olFeature);
+        }
+    }, [selectedFeatureFromSearch]);
+
     const handleFeatureSelect = (feature) => {
         if (!feature) {
-            return;
+             setSelectedAssetFeature(null);
+             if (isRightSidebarVisible) closeRightSidebar();
+             clearSelectedFeature();
+             return;
         }
 
-        // Convert the OpenLayers feature to a standard GeoJSON feature object
         const featureObject = new GeoJSON().writeFeatureObject(feature, {
             featureProjection: 'EPSG:3857',
             dataProjection: 'EPSG:4326'
         });
 
-        // Check if the same feature is being clicked again to deselect it
-        const isSameFeature = selectedAssetFeature && selectedAssetFeature.properties.Name === featureObject.properties.Name;
+        const isSameFeature = selectedAssetFeature && selectedAssetFeature.properties["FLA Number"] === featureObject.properties["FLA Number"];
 
         if (isSameFeature) {
             setSelectedAssetFeature(null);
             if (isRightSidebarVisible) {
                 closeRightSidebar();
             }
+            clearSelectedFeature();
         } else {
-            setSelectedAssetFeature(featureObject); // Store the complete GeoJSON object
+            setSelectedAssetFeature(featureObject);
+            const midpoint = calculateMidpoint(featureObject);
+            if (midpoint) {
+                setMapCenter(midpoint);
+                setMapZoom(15);
+            }
             if (!isRightSidebarVisible) {
                 openRightSidebar();
             }
@@ -79,6 +99,7 @@ function Dashboard() {
     const handleRightSidebarToggle = () => {
         if (isRightSidebarVisible) {
             setSelectedAssetFeature(null);
+            clearSelectedFeature();
         }
         toggleRightSidebar();
     };
@@ -315,6 +336,8 @@ function Dashboard() {
                         setIsLegendVisible={setIsLegendVisible}
                         onMapInstanceReady={setMapInstance}
                         mapLoading={mapLoading}
+                        centerCoordinates={mapCenter}
+                        zoomLevel={mapZoom}
                         onFeatureSelect={handleFeatureSelect}
                         selectedAssetFeature={selectedAssetFeature}
                     />
